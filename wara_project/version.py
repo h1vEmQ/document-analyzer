@@ -15,7 +15,7 @@ __app_name__ = "Report analyzer"
 __app_full_name__ = "Report analyzer"
 
 # Описание
-__description__ = "Система автоматического анализа еженедельных отчетов"
+__description__ = "Система анализа документов"
 
 # Автор
 __author__ = "Report analyzer Development Team"
