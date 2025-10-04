@@ -28,7 +28,18 @@ class ReportListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         # Показываем только корневые отчеты (не версии)
-        return Report.objects.filter(user=self.request.user, parent_report__isnull=True).order_by('-generated_date')
+        queryset = Report.objects.filter(user=self.request.user, parent_report__isnull=True).order_by('-generated_date')
+        
+        # Фильтрация по сравнению, если указан comparison_id
+        comparison_id = self.request.GET.get('comparison')
+        if comparison_id:
+            try:
+                comparison_id = int(comparison_id)
+                queryset = queryset.filter(comparison_id=comparison_id)
+            except (ValueError, TypeError):
+                pass  # Игнорируем некорректные значения
+                
+        return queryset
     
     def get_paginate_by(self, queryset):
         """Получить количество элементов на странице из настроек приложения"""
@@ -44,6 +55,19 @@ class ReportListView(LoginRequiredMixin, ListView):
         
         # Сохраняем режим в сессии
         self.request.session['reports_view_mode'] = view_mode
+        
+        # Добавляем информацию о сравнении, если фильтрация по сравнению
+        comparison_id = self.request.GET.get('comparison')
+        if comparison_id:
+            try:
+                from analysis.models import Comparison
+                comparison = Comparison.objects.get(id=int(comparison_id), user=self.request.user)
+                context['filtered_comparison'] = comparison
+                context['is_filtered'] = True
+            except (Comparison.DoesNotExist, ValueError, TypeError):
+                context['is_filtered'] = False
+        else:
+            context['is_filtered'] = False
             
         return context
 
