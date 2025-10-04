@@ -1,0 +1,185 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Удалить версию документа - WARA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Подтверждение удаления версии документа
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h5><i class="fas fa-warning"></i> Внимание!</h5>
+                    <p class="mb-0">
+                        Вы собираетесь удалить версию <strong>v{{ object.version }}</strong> документа 
+                        <strong>"{{ object.title }}"</strong>.
+                        Это действие нельзя отменить!
+                    </p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-info-circle"></i> Информация о версии:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Название:</strong> {{ object.title }}</li>
+                            <li><strong>Версия:</strong> 
+                                <span class="badge bg-primary">v{{ object.version }}</span>
+                                {% if object.is_latest_version %}
+                                    <span class="badge bg-success">Последняя версия</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Старая версия</span>
+                                {% endif %}
+                            </li>
+                            <li><strong>Дата загрузки:</strong> {{ object.upload_date|date:"d.m.Y H:i" }}</li>
+                            <li><strong>Статус:</strong> 
+                                <span class="badge 
+                                    {% if object.status == 'processed' %}bg-success
+                                    {% elif object.status == 'uploaded' %}bg-warning
+                                    {% elif object.status == 'error' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ object.get_status_display }}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-code-branch"></i> Информация о версиях:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Всего версий:</strong> {{ object.get_version_count }}</li>
+                            <li><strong>Тип документа:</strong> 
+                                {% if object.parent_document %}
+                                    Версия документа
+                                {% else %}
+                                    Корневой документ
+                                {% endif %}
+                            </li>
+                            {% if object.parent_document %}
+                                <li><strong>Корневой документ:</strong> 
+                                    <a href="{% url 'documents:detail' object.get_root_document.pk %}">
+                                        {{ object.get_root_document.title }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                        
+                        {% if object.get_version_count > 1 %}
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Влияние на другие версии:</h6>
+                                {% if object.is_latest_version %}
+                                    <p class="mb-1">
+                                        <strong>Это последняя версия!</strong>
+                                    </p>
+                                    <p class="mb-0">
+                                        После удаления последней версией станет предыдущая версия документа.
+                                    </p>
+                                {% else %}
+                                    <p class="mb-0">
+                                        Это старая версия. Удаление не повлияет на другие версии.
+                                    </p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if object.version_notes %}
+                    <div class="mt-3">
+                        <h6><i class="fas fa-sticky-note"></i> Заметки к версии:</h6>
+                        <div class="alert alert-light">
+                            <p class="mb-0">{{ object.version_notes }}</p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if object.file %}
+                    <div class="mt-3">
+                        <h6><i class="fas fa-file"></i> Файл документа:</h6>
+                        <div class="alert alert-light">
+                            <p class="mb-1">
+                                <strong>Размер файла:</strong> {{ object.get_file_size_mb }} МБ
+                            </p>
+                            <p class="mb-1">
+                                <strong>Тип файла:</strong> {{ object.get_file_extension|upper }}
+                            </p>
+                            <p class="mb-0">
+                                <strong>Путь:</strong> 
+                                <small class="text-muted">{{ object.file.name }}</small>
+                            </p>
+                        </div>
+                        <div class="alert alert-warning">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                Физический файл также будет удален с сервера!
+                            </small>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if object.is_root_document and object.get_version_count > 1 %}
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-ban"></i> Ограничение удаления:</h6>
+                        <p class="mb-0">
+                            <strong>Нельзя удалить корневой документ, если есть другие версии!</strong><br>
+                            Сначала удалите все версии документа, затем корневой документ.
+                        </p>
+                    </div>
+                {% endif %}
+
+                {% if object.has_content %}
+                    <div class="mt-3">
+                        <h6><i class="fas fa-list"></i> Обработанное содержимое:</h6>
+                        <div class="alert alert-light">
+                            <p class="mb-1">
+                                <strong>Разделов:</strong> {{ object.get_parsed_sections_count }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Таблиц:</strong> {{ object.get_parsed_tables_count }}
+                            </p>
+                            <p class="mb-0">
+                                <strong>Дата обработки:</strong> {{ object.processed_date|date:"d.m.Y H:i"|default:"Не обработано" }}
+                            </p>
+                        </div>
+                        <div class="alert alert-warning">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                Все обработанные данные (разделы, таблицы) также будут удалены!
+                            </small>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        {% if object.parent_document %}
+                            <a href="{% url 'documents:detail' object.get_root_document.pk %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> Отмена
+                            </a>
+                        {% else %}
+                            <a href="{% url 'documents:detail' object.pk %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> Отмена
+                            </a>
+                        {% endif %}
+                        
+                        {% if object.is_root_document and object.get_version_count > 1 %}
+                            <button type="button" class="btn btn-danger" disabled>
+                                <i class="fas fa-ban"></i> Удаление заблокировано
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Да, удалить версию
+                            </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

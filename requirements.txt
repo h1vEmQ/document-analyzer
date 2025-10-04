@@ -1,0 +1,13 @@
+Django==5.2.7
+python-docx==1.2.0
+diff-match-patch==20241021
+ReportLab==4.4.4
+Pillow==11.3.0
+asgiref==3.9.2
+sqlparse==0.5.3
+lxml==6.0.2
+charset-normalizer==3.4.3
+typing-extensions==4.15.0
+requests==2.31.0
+celery==5.3.4
+redis==5.0.1

@@ -1,0 +1,196 @@
+{% extends 'base/base.html' %}
+
+{% block title %}История версий - WARA{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Заголовок -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-history"></i> История версий документа</h2>
+                <p class="text-muted mb-0">{{ root_document.title }}</p>
+            </div>
+            <div>
+                <a href="{% url 'documents:detail' root_document.pk %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> К документу
+                </a>
+                <a href="{% url 'documents:version_upload' latest_version.pk %}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Загрузить новую версию
+                </a>
+            </div>
+        </div>
+        
+        <!-- Статистика -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-code-branch fa-2x text-primary mb-2"></i>
+                        <h5 class="card-title">{{ version_count }}</h5>
+                        <p class="card-text text-muted">Всего версий</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-star fa-2x text-success mb-2"></i>
+                        <h5 class="card-title">{{ latest_version.version }}</h5>
+                        <p class="card-text text-muted">Текущая версия</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-calendar fa-2x text-info mb-2"></i>
+                        <h5 class="card-title">{{ latest_version.upload_date|date:"d.m.Y" }}</h5>
+                        <p class="card-text text-muted">Последнее обновление</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-file fa-2x text-warning mb-2"></i>
+                        <h5 class="card-title">{{ latest_version.get_file_size_mb }} МБ</h5>
+                        <p class="card-text text-muted">Размер текущей версии</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Список версий -->
+        {% if versions %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Все версии документа
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 10%;"><i class="fas fa-hashtag"></i> Версия</th>
+                                    <th style="width: 15%;"><i class="fas fa-calendar"></i> Дата</th>
+                                    <th style="width: 10%;"><i class="fas fa-weight"></i> Размер</th>
+                                    <th style="width: 15%;"><i class="fas fa-info-circle"></i> Статус</th>
+                                    <th style="width: 35%;"><i class="fas fa-sticky-note"></i> Заметки</th>
+                                    <th style="width: 15%;"><i class="fas fa-cogs"></i> Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for version in versions %}
+                                <tr class="{% if version.is_latest_version %}table-success{% endif %}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <strong>{{ version.version }}</strong>
+                                            {% if version.is_latest_version %}
+                                                <span class="badge bg-success ms-2">
+                                                    <i class="fas fa-star"></i> Текущая
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ version.upload_date|date:"d.m.Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ version.get_file_size_mb }} МБ</span>
+                                    </td>
+                                    <td>
+                                        {% if version.status == 'processed' %}
+                                            <span class="badge bg-success"><i class="fas fa-check"></i> Обработан</span>
+                                        {% elif version.status == 'processing' %}
+                                            <span class="badge bg-info"><i class="fas fa-spinner fa-spin"></i> Обработка</span>
+                                        {% elif version.status == 'error' %}
+                                            <span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i> Ошибка</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary"><i class="fas fa-clock"></i> Загружен</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if version.version_notes %}
+                                            <small class="text-muted">{{ version.version_notes|truncatechars:50 }}</small>
+                                        {% else %}
+                                            <small class="text-muted">—</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'documents:detail' version.pk %}" class="btn btn-outline-primary" title="Просмотр">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if version.status != 'processed' %}
+                                                <a href="{% url 'documents:parse' version.pk %}" class="btn btn-outline-success" title="Обработать">
+                                                    <i class="fas fa-cog"></i>
+                                                </a>
+                                            {% endif %}
+                                            {% if not version.is_latest_version %}
+                                                <a href="{% url 'documents:version_upload' version.pk %}" class="btn btn-outline-info" title="Создать версию от этой">
+                                                    <i class="fas fa-copy"></i>
+                                                </a>
+                                            {% endif %}
+                                            {% if not version.parent_document or versions.count > 1 %}
+                                                <a href="{% url 'documents:version_delete' version.pk %}" class="btn btn-outline-danger" title="Удалить версию">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-history fa-3x text-muted"></i>
+                </div>
+                <h4 class="text-muted">История версий пуста</h4>
+                <p class="text-muted">У этого документа пока нет версий.</p>
+                <a href="{% url 'documents:version_upload' document.pk %}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Загрузить первую версию
+                </a>
+            </div>
+        {% endif %}
+        
+        <!-- Информация о версионировании -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle"></i> О системе версионирования
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-check-circle text-success"></i> Преимущества:</h6>
+                        <ul>
+                            <li>Сохранение истории изменений</li>
+                            <li>Возможность сравнения версий</li>
+                            <li>Откат к предыдущим версиям</li>
+                            <li>Отслеживание эволюции документа</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-lightbulb text-warning"></i> Рекомендации:</h6>
+                        <ul>
+                            <li>Указывайте заметки к версиям</li>
+                            <li>Регулярно создавайте новые версии</li>
+                            <li>Используйте осмысленные названия</li>
+                            <li>Сравнивайте версии для анализа изменений</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

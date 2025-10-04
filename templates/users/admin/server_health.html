@@ -1,0 +1,452 @@
+{% extends 'users/admin/base.html' %}
+{% load static %}
+
+{% block title %}Состояние сервера{% endblock %}
+
+{% block extra_css %}
+<style>
+    .health-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    
+    .health-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #007bff;
+    }
+    
+    .health-card h4 {
+        color: #495057;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .health-card h4 i {
+        margin-right: 10px;
+    }
+    
+    .metric-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .metric-item:last-child {
+        border-bottom: none;
+    }
+    
+    .metric-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .metric-value {
+        font-weight: 500;
+        font-size: 1.1em;
+    }
+    
+    .metric-value.good {
+        color: #28a745;
+    }
+    
+    .metric-value.warning {
+        color: #ffc107;
+    }
+    
+    .metric-value.danger {
+        color: #dc3545;
+    }
+    
+    .progress {
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+    
+    .progress-bar {
+        transition: width 0.3s ease;
+    }
+    
+    .progress-bar.good {
+        background-color: #28a745;
+    }
+    
+    .progress-bar.warning {
+        background-color: #ffc107;
+    }
+    
+    .progress-bar.danger {
+        background-color: #dc3545;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-indicator.good {
+        background-color: #28a745;
+    }
+    
+    .status-indicator.warning {
+        background-color: #ffc107;
+    }
+    
+    .status-indicator.danger {
+        background-color: #dc3545;
+    }
+    
+    .system-info {
+        background: #e9ecef;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .system-info h5 {
+        color: #495057;
+        margin-bottom: 10px;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+    
+    .info-value {
+        color: #495057;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-left: 10px;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        border-color: #545b62;
+        color: white;
+    }
+    
+    .auto-refresh {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+    
+    .auto-refresh .form-check {
+        margin-bottom: 0;
+    }
+    
+    .refresh-indicator {
+        font-size: 0.8em;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-heartbeat text-success"></i>
+                    Состояние сервера
+                </h2>
+                <div>
+                    <a href="{% url 'users:admin_server_settings' %}" class="btn btn-secondary">
+                        <i class="fas fa-cog"></i> Настройки сервера
+                    </a>
+                    <a href="{% url 'users:admin_server_metrics' %}" class="btn btn-secondary">
+                        <i class="fas fa-chart-bar"></i> Метрики
+                    </a>
+                </div>
+            </div>
+
+            <!-- Системная информация -->
+            <div class="system-info">
+                <h5><i class="fas fa-info-circle"></i> Системная информация</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">ОС:</span>
+                            <span class="info-value">{{ system_info.os }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">CPU:</span>
+                            <span class="info-value">{{ system_info.cpu_cores }} ядер</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">Память:</span>
+                            <span class="info-value">{{ system_info.total_memory|floatformat:0 }} ГБ</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Диск:</span>
+                            <span class="info-value">{{ system_info.total_disk|floatformat:0 }} ГБ</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">Python:</span>
+                            <span class="info-value">{{ system_info.python_version }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Django:</span>
+                            <span class="info-value">{{ system_info.django_version }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="health-container">
+                <div class="row">
+                    <!-- Использование CPU -->
+                    <div class="col-md-4">
+                        <div class="health-card">
+                            <h4><i class="fas fa-microchip"></i> Использование CPU</h4>
+                            <div class="metric-item">
+                                <span class="metric-label">Загрузка CPU</span>
+                                <span class="metric-value {% if health_data.cpu_percent < 80 %}good{% elif health_data.cpu_percent < 95 %}warning{% else %}danger{% endif %}">
+                                    {{ health_data.cpu_percent|floatformat:1 }}%
+                                </span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar {% if health_data.cpu_percent < 80 %}good{% elif health_data.cpu_percent < 95 %}warning{% else %}danger{% endif %}" 
+                                     style="width: {{ health_data.cpu_percent }}%"></div>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Загрузка системы</span>
+                                <span class="metric-value {% if health_data.load_avg.0 < 1 %}good{% elif health_data.load_avg.0 < 2 %}warning{% else %}danger{% endif %}">
+                                    {{ health_data.load_avg.0|floatformat:2 }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Использование памяти -->
+                    <div class="col-md-4">
+                        <div class="health-card">
+                            <h4><i class="fas fa-memory"></i> Использование памяти</h4>
+                            <div class="metric-item">
+                                <span class="metric-label">Использовано RAM</span>
+                                <span class="metric-value {% if health_data.memory_percent < 80 %}good{% elif health_data.memory_percent < 95 %}warning{% else %}danger{% endif %}">
+                                    {{ health_data.memory_percent|floatformat:1 }}%
+                                </span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar {% if health_data.memory_percent < 80 %}good{% elif health_data.memory_percent < 95 %}warning{% else %}danger{% endif %}" 
+                                     style="width: {{ health_data.memory_percent }}%"></div>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Доступно</span>
+                                <span class="metric-value">
+                                    {{ health_data.available_memory|floatformat:1 }} ГБ
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Использование диска -->
+                    <div class="col-md-4">
+                        <div class="health-card">
+                            <h4><i class="fas fa-hdd"></i> Использование диска</h4>
+                            <div class="metric-item">
+                                <span class="metric-label">Использовано диска</span>
+                                <span class="metric-value {% if health_data.disk_percent < 80 %}good{% elif health_data.disk_percent < 95 %}warning{% else %}danger{% endif %}">
+                                    {{ health_data.disk_percent|floatformat:1 }}%
+                                </span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar {% if health_data.disk_percent < 80 %}good{% elif health_data.disk_percent < 95 %}warning{% else %}danger{% endif %}" 
+                                     style="width: {{ health_data.disk_percent }}%"></div>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Свободно</span>
+                                <span class="metric-value">
+                                    {{ health_data.free_disk|floatformat:1 }} ГБ
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Сетевая активность -->
+                    <div class="col-md-6">
+                        <div class="health-card">
+                            <h4><i class="fas fa-network-wired"></i> Сетевая активность</h4>
+                            <div class="metric-item">
+                                <span class="metric-label">Отправлено</span>
+                                <span class="metric-value">{{ health_data.network_sent|floatformat:0 }} МБ</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Получено</span>
+                                <span class="metric-value">{{ health_data.network_recv|floatformat:0 }} МБ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Активные процессы -->
+                    <div class="col-md-6">
+                        <div class="health-card">
+                            <h4><i class="fas fa-tasks"></i> Активные процессы</h4>
+                            <div class="metric-item">
+                                <span class="metric-label">Количество процессов</span>
+                                <span class="metric-value">{{ health_data.process_count }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Время работы</span>
+                                <span class="metric-value">{{ health_data.uptime }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Общее состояние -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="health-card">
+                            <h4><i class="fas fa-heartbeat"></i> Общее состояние системы</h4>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="metric-item">
+                                        <span class="metric-label">
+                                            <span class="status-indicator {% if health_data.cpu_percent < 80 %}good{% elif health_data.cpu_percent < 95 %}warning{% else %}danger{% endif %}"></span>
+                                            CPU
+                                        </span>
+                                        <span class="metric-value {% if health_data.cpu_percent < 80 %}good{% elif health_data.cpu_percent < 95 %}warning{% else %}danger{% endif %}">
+                                            {% if health_data.cpu_percent < 80 %}Отлично{% elif health_data.cpu_percent < 95 %}Предупреждение{% else %}Критично{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-item">
+                                        <span class="metric-label">
+                                            <span class="status-indicator {% if health_data.memory_percent < 80 %}good{% elif health_data.memory_percent < 95 %}warning{% else %}danger{% endif %}"></span>
+                                            Память
+                                        </span>
+                                        <span class="metric-value {% if health_data.memory_percent < 80 %}good{% elif health_data.memory_percent < 95 %}warning{% else %}danger{% endif %}">
+                                            {% if health_data.memory_percent < 80 %}Отлично{% elif health_data.memory_percent < 95 %}Предупреждение{% else %}Критично{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-item">
+                                        <span class="metric-label">
+                                            <span class="status-indicator {% if health_data.disk_percent < 80 %}good{% elif health_data.disk_percent < 95 %}warning{% else %}danger{% endif %}"></span>
+                                            Диск
+                                        </span>
+                                        <span class="metric-value {% if health_data.disk_percent < 80 %}good{% elif health_data.disk_percent < 95 %}warning{% else %}danger{% endif %}">
+                                            {% if health_data.disk_percent < 80 %}Отлично{% elif health_data.disk_percent < 95 %}Предупреждение{% else %}Критично{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-item">
+                                        <span class="metric-label">
+                                            <span class="status-indicator good"></span>
+                                            Система
+                                        </span>
+                                        <span class="metric-value good">Работает</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Панель автообновления -->
+<div class="auto-refresh">
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+        <label class="form-check-label" for="autoRefresh">
+            Автообновление
+        </label>
+    </div>
+    <div class="refresh-indicator" id="refreshTimer">Обновление через 30 сек</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let autoRefreshEnabled = true;
+    let refreshTimer = 30;
+    let timerInterval;
+    
+    // Функция автообновления
+    function startAutoRefresh() {
+        if (autoRefreshEnabled) {
+            timerInterval = setInterval(function() {
+                refreshTimer--;
+                document.getElementById('refreshTimer').textContent = `Обновление через ${refreshTimer} сек`;
+                
+                if (refreshTimer <= 0) {
+                    location.reload();
+                }
+            }, 1000);
+        }
+    }
+    
+    // Обработчик изменения чекбокса
+    document.getElementById('autoRefresh').addEventListener('change', function() {
+        autoRefreshEnabled = this.checked;
+        if (autoRefreshEnabled) {
+            refreshTimer = 30;
+            startAutoRefresh();
+        } else {
+            clearInterval(timerInterval);
+            document.getElementById('refreshTimer').textContent = 'Автообновление отключено';
+        }
+    });
+    
+    // Запуск автообновления при загрузке страницы
+    startAutoRefresh();
+    
+    // Остановка автообновления при потере фокуса
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            clearInterval(timerInterval);
+        } else if (autoRefreshEnabled) {
+            startAutoRefresh();
+        }
+    });
+</script>
+{% endblock %}

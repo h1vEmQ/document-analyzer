@@ -1,0 +1,243 @@
+{% extends 'users/admin/base.html' %}
+{% load static %}
+
+{% block title %}Массовое удаление документов{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .delete-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #dc3545;
+        text-align: center;
+    }
+    
+    .delete-icon {
+        font-size: 4rem;
+        color: #dc3545;
+        margin-bottom: 20px;
+    }
+    
+    .delete-title {
+        color: #495057;
+        margin-bottom: 20px;
+    }
+    
+    .delete-message {
+        color: #6c757d;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+    
+    .btn-confirm {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+    
+    .btn-confirm:hover {
+        background: #c82333;
+        border-color: #bd2130;
+        color: white;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        text-decoration: none;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+        border-color: #545b62;
+        color: white;
+    }
+    
+    .warning-list {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 20px 0;
+        text-align: left;
+    }
+    
+    .warning-list h6 {
+        color: #721c24;
+        margin-bottom: 10px;
+    }
+    
+    .warning-list ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #721c24;
+    }
+    
+    .stats-container {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 4px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: left;
+    }
+    
+    .stats-container h6 {
+        color: #856404;
+        margin-bottom: 15px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .stat-item {
+        background: #fff;
+        padding: 15px;
+        border-radius: 4px;
+        border-left: 3px solid #ffc107;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #dc3545;
+    }
+    
+    .stat-label {
+        color: #856404;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="delete-container">
+                <div class="delete-card">
+                    <div class="delete-icon">
+                        <i class="fas fa-trash-alt"></i>
+                    </div>
+                    
+                    <h2 class="delete-title">Массовое удаление документов</h2>
+                    
+                    <p class="delete-message">
+                        ВНИМАНИЕ! Вы собираетесь удалить ВСЕ документы, сравнения и отчеты из системы. 
+                        Это действие необратимо и приведет к полной очистке базы данных от всех пользовательских данных.
+                    </p>
+                    
+                    <div class="stats-container">
+                        <h6><i class="fas fa-chart-bar"></i> Статистика данных для удаления:</h6>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">{{ total_documents }}</div>
+                                <div class="stat-label">Документов</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">{{ total_comparisons }}</div>
+                                <div class="stat-label">Сравнений</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">{{ total_reports }}</div>
+                                <div class="stat-label">Отчетов</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="warning-list">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Критическое предупреждение!</h6>
+                        <ul>
+                            <li><strong>ВСЕ документы</strong> будут удалены без возможности восстановления</li>
+                            <li><strong>ВСЕ сравнения</strong> будут удалены вместе с результатами анализа</li>
+                            <li><strong>ВСЕ отчеты</strong> будут удалены вместе с файлами</li>
+                            <li><strong>Файлы документов</strong> будут удалены с диска сервера</li>
+                            <li><strong>Пользователи останутся</strong> - удаляются только данные, не аккаунты</li>
+                            <li><strong>Настройки системы</strong> останутся без изменений</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post" onsubmit="return confirmFinalDeletion()">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-confirm">
+                            <i class="fas fa-trash-alt"></i> Да, удалить ВСЕ данные
+                        </button>
+                        <a href="{% url 'users:admin_list' %}" class="btn-cancel">
+                            <i class="fas fa-times"></i> Отмена
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmFinalDeletion() {
+        const totalDocs = {{ total_documents }};
+        const totalComps = {{ total_comparisons }};
+        const totalReports = {{ total_reports }};
+        const totalItems = totalDocs + totalComps + totalReports;
+        
+        if (totalItems === 0) {
+            alert('Нет данных для удаления.');
+            return false;
+        }
+        
+        const message = `ВНИМАНИЕ! Вы действительно хотите удалить ВСЕ данные?\n\n` +
+                       `Будет удалено:\n` +
+                       `• ${totalDocs} документов\n` +
+                       `• ${totalComps} сравнений\n` +
+                       `• ${totalReports} отчетов\n\n` +
+                       `Это действие НЕОБРАТИМО!\n\n` +
+                       `Нажмите OK для подтверждения или Отмена для отмены.`;
+        
+        return confirm(message);
+    }
+    
+    // Дополнительная защита от случайного клика
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmBtn = document.querySelector('.btn-confirm');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function(e) {
+                // Добавляем класс для визуального эффекта
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Подтверждение...';
+                this.disabled = true;
+                
+                // Восстанавливаем через 2 секунды если пользователь отменил
+                setTimeout(() => {
+                    if (this.disabled) {
+                        this.innerHTML = '<i class="fas fa-trash-alt"></i> Да, удалить ВСЕ данные';
+                        this.disabled = false;
+                    }
+                }, 2000);
+            });
+        }
+    });
+</script>
+{% endblock %}

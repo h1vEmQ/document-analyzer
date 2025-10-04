@@ -1,0 +1,69 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Вход в систему - WARA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="mb-0">🔐 Вход в систему</h4>
+                <p class="text-muted mb-0">WARA - Анализ отчетов</p>
+            </div>
+            <div class="card-body">
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Ошибка!</strong> Неверное имя пользователя или пароль.
+                    </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" id="id_username" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="id_password" name="password" required>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            Войти
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small class="text-muted">
+                    Нет аккаунта? 
+                    <a href="{% url 'users:register' %}" class="text-decoration-none">
+                        Зарегистрироваться
+                    </a>
+                </small>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6>Демо-аккаунты:</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>Администратор:</strong><br>
+                            <small class="text-muted">admin / admin123</small>
+                        </div>
+                        <div class="col-6">
+                            <strong>Пользователь:</strong><br>
+                            <small class="text-muted">user / user123</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

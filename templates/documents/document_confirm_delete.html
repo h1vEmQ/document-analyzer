@@ -1,0 +1,42 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Удаление документа - WARA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0 text-danger">🗑️ Удаление документа</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <strong>Внимание!</strong> Это действие нельзя отменить.
+                </div>
+                
+                <p>Вы уверены, что хотите удалить документ:</p>
+                <div class="bg-light p-3 rounded">
+                    <h5>{{ document.title }}</h5>
+                    <small class="text-muted">
+                        Файл: {{ document.filename }}<br>
+                        Размер: {{ document.get_file_size_mb }} МБ<br>
+                        Дата загрузки: {{ document.upload_date|date:"d.m.Y H:i" }}
+                    </small>
+                </div>
+                
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'documents:detail' document.pk %}" class="btn btn-secondary me-md-2">
+                            Отмена
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            🗑️ Удалить навсегда
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

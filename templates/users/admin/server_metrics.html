@@ -1,0 +1,623 @@
+{% extends 'users/admin/base.html' %}
+{% load static %}
+
+{% block title %}Метрики сервера{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metrics-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    
+    .metrics-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #007bff;
+    }
+    
+    .metrics-card h4 {
+        color: #495057;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .metrics-card h4 i {
+        margin-right: 10px;
+    }
+    
+    .metric-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .metric-item:last-child {
+        border-bottom: none;
+    }
+    
+    .metric-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .metric-value {
+        font-weight: 500;
+        font-size: 1.1em;
+        color: #007bff;
+    }
+    
+    .system-info {
+        background: #e9ecef;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .system-info h5 {
+        color: #495057;
+        margin-bottom: 10px;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+    
+    .info-value {
+        color: #495057;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-left: 10px;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        border-color: #545b62;
+        color: white;
+    }
+    
+    .chart-container {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .chart-container h4 {
+        color: #495057;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .chart-container h4 i {
+        margin-right: 10px;
+    }
+    
+    .chart-wrapper {
+        height: 300px;
+        position: relative;
+    }
+    
+    .refresh-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-chart-bar text-primary"></i>
+                    Метрики сервера
+                </h2>
+                <div>
+                    <a href="{% url 'users:admin_server_settings' %}" class="btn btn-secondary">
+                        <i class="fas fa-cog"></i> Настройки сервера
+                    </a>
+                    <a href="{% url 'users:admin_server_health' %}" class="btn btn-secondary">
+                        <i class="fas fa-heartbeat"></i> Состояние сервера
+                    </a>
+                </div>
+            </div>
+
+            <!-- Системная информация -->
+            <div class="system-info">
+                <h5><i class="fas fa-info-circle"></i> Системная информация</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">ОС:</span>
+                            <span class="info-value">{{ system_info.os }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">CPU:</span>
+                            <span class="info-value">{{ system_info.cpu_cores }} ядер</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">Память:</span>
+                            <span class="info-value">{{ system_info.total_memory|floatformat:0 }} ГБ</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Диск:</span>
+                            <span class="info-value">{{ system_info.total_disk|floatformat:0 }} ГБ</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">Python:</span>
+                            <span class="info-value">{{ system_info.python_version }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Django:</span>
+                            <span class="info-value">{{ system_info.django_version }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metrics-container">
+                <div class="row">
+                    <!-- Производительность -->
+                    <div class="col-md-6">
+                        <div class="metrics-card">
+                            <h4><i class="fas fa-tachometer-alt"></i> Производительность</h4>
+                            <div class="metric-item">
+                                <span class="metric-label">Время ответа сервера</span>
+                                <span class="metric-value">{{ metrics_data.response_time }} мс</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Активные соединения</span>
+                                <span class="metric-value">{{ metrics_data.active_connections }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Запросов в секунду</span>
+                                <span class="metric-value">{{ metrics_data.requests_per_second }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Среднее время обработки</span>
+                                <span class="metric-value">{{ metrics_data.avg_processing_time }} мс</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Использование ресурсов -->
+                    <div class="col-md-6">
+                        <div class="metrics-card">
+                            <h4><i class="fas fa-chart-pie"></i> Использование ресурсов</h4>
+                            <div class="metric-item">
+                                <span class="metric-label">Использование CPU</span>
+                                <span class="metric-value">{{ metrics_data.cpu_usage|floatformat:1 }}%</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Использование памяти</span>
+                                <span class="metric-value">{{ metrics_data.memory_usage|floatformat:1 }}%</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Использование диска</span>
+                                <span class="metric-value">{{ metrics_data.disk_usage|floatformat:1 }}%</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Сетевой трафик</span>
+                                <span class="metric-value">{{ metrics_data.network_usage|floatformat:0 }} МБ/с</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Статистика запросов -->
+                    <div class="col-md-6">
+                        <div class="metrics-card">
+                            <h4><i class="fas fa-exchange-alt"></i> Статистика запросов</h4>
+                            <div class="metric-item">
+                                <span class="metric-label">Всего запросов</span>
+                                <span class="metric-value">{{ metrics_data.total_requests }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Успешных запросов</span>
+                                <span class="metric-value">{{ metrics_data.successful_requests }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Ошибок</span>
+                                <span class="metric-value">{{ metrics_data.error_requests }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Процент успеха</span>
+                                <span class="metric-value">{{ metrics_data.success_rate|floatformat:1 }}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Статистика пользователей -->
+                    <div class="col-md-6">
+                        <div class="metrics-card">
+                            <h4><i class="fas fa-users"></i> Статистика пользователей</h4>
+                            <div class="metric-item">
+                                <span class="metric-label">Активных пользователей</span>
+                                <span class="metric-value">{{ metrics_data.active_users }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Всего пользователей</span>
+                                <span class="metric-value">{{ metrics_data.total_users }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Новых пользователей сегодня</span>
+                                <span class="metric-value">{{ metrics_data.new_users_today }}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Сессий</span>
+                                <span class="metric-value">{{ metrics_data.active_sessions }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Графики производительности -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4><i class="fas fa-chart-line"></i> Использование CPU</h4>
+                            <button class="btn btn-sm btn-outline-secondary refresh-btn" onclick="refreshCPUChart()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <div class="chart-wrapper">
+                                <canvas id="cpuChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4><i class="fas fa-chart-area"></i> Использование памяти</h4>
+                            <button class="btn btn-sm btn-outline-secondary refresh-btn" onclick="refreshMemoryChart()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <div class="chart-wrapper">
+                                <canvas id="memoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Графики активности -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4><i class="fas fa-chart-bar"></i> Запросы в час</h4>
+                            <button class="btn btn-sm btn-outline-secondary refresh-btn" onclick="refreshRequestsChart()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <div class="chart-wrapper">
+                                <canvas id="requestsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4><i class="fas fa-chart-pie"></i> Распределение запросов</h4>
+                            <button class="btn btn-sm btn-outline-secondary refresh-btn" onclick="refreshDistributionChart()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <div class="chart-wrapper">
+                                <canvas id="distributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Дополнительная статистика -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="metrics-card">
+                            <h4><i class="fas fa-info-circle"></i> Дополнительная статистика</h4>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Время работы сервера</span>
+                                        <span class="metric-value">{{ metrics_data.uptime }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Кэш попаданий</span>
+                                        <span class="metric-value">{{ metrics_data.cache_hits }}%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Размер базы данных</span>
+                                        <span class="metric-value">{{ metrics_data.database_size }} МБ</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Логи за сегодня</span>
+                                        <span class="metric-value">{{ metrics_data.logs_today }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Глобальные переменные для графиков
+    let cpuChart, memoryChart, requestsChart, distributionChart;
+    
+    // Данные для графиков (имитация реальных данных)
+    const generateTimeLabels = () => {
+        const labels = [];
+        for (let i = 23; i >= 0; i--) {
+            const time = new Date();
+            time.setHours(time.getHours() - i);
+            labels.push(time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }));
+        }
+        return labels;
+    };
+    
+    const generateRandomData = (min, max, count) => {
+        return Array.from({ length: count }, () => Math.floor(Math.random() * (max - min + 1)) + min);
+    };
+    
+    // Инициализация графика CPU
+    function initCPUChart() {
+        const ctx = document.getElementById('cpuChart').getContext('2d');
+        const currentCPU = {{ metrics_data.cpu_usage|default:0 }};
+        
+        cpuChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: generateTimeLabels(),
+                datasets: [{
+                    label: 'Использование CPU (%)',
+                    data: [...generateRandomData(currentCPU - 10, currentCPU + 10, 23), currentCPU],
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Инициализация графика памяти
+    function initMemoryChart() {
+        const ctx = document.getElementById('memoryChart').getContext('2d');
+        const currentMemory = {{ metrics_data.memory_usage|default:0 }};
+        
+        memoryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: generateTimeLabels(),
+                datasets: [{
+                    label: 'Использование памяти (%)',
+                    data: [...generateRandomData(currentMemory - 5, currentMemory + 5, 23), currentMemory],
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Инициализация графика запросов
+    function initRequestsChart() {
+        const ctx = document.getElementById('requestsChart').getContext('2d');
+        const currentRPS = {{ metrics_data.requests_per_second|default:0 }};
+        
+        requestsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: generateTimeLabels(),
+                datasets: [{
+                    label: 'Запросов в час',
+                    data: generateRandomData(currentRPS * 3000, currentRPS * 3700, 24),
+                    backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                    borderColor: '#ffc107',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('ru-RU');
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Инициализация круговой диаграммы
+    function initDistributionChart() {
+        const ctx = document.getElementById('distributionChart').getContext('2d');
+        
+        distributionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Успешные запросы', 'Ошибки 4xx', 'Ошибки 5xx', 'Перенаправления'],
+                datasets: [{
+                    data: [
+                        {{ metrics_data.successful_requests|default:0 }},
+                        {{ metrics_data.error_requests|default:0 }} * 0.6,
+                        {{ metrics_data.error_requests|default:0 }} * 0.4,
+                        {{ metrics_data.total_requests|default:0 }} * 0.05
+                    ],
+                    backgroundColor: [
+                        '#28a745',
+                        '#ffc107',
+                        '#dc3545',
+                        '#17a2b8'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Функции обновления графиков
+    function refreshCPUChart() {
+        if (cpuChart) {
+            const newData = cpuChart.data.datasets[0].data.slice(1);
+            newData.push({{ metrics_data.cpu_usage|default:0 }});
+            cpuChart.data.datasets[0].data = newData;
+            cpuChart.update('none');
+        }
+    }
+    
+    function refreshMemoryChart() {
+        if (memoryChart) {
+            const newData = memoryChart.data.datasets[0].data.slice(1);
+            newData.push({{ metrics_data.memory_usage|default:0 }});
+            memoryChart.data.datasets[0].data = newData;
+            memoryChart.update('none');
+        }
+    }
+    
+    function refreshRequestsChart() {
+        if (requestsChart) {
+            const newData = generateRandomData({{ metrics_data.requests_per_second|default:0 }} * 3000, {{ metrics_data.requests_per_second|default:0 }} * 3700, 24);
+            requestsChart.data.datasets[0].data = newData;
+            requestsChart.update('none');
+        }
+    }
+    
+    function refreshDistributionChart() {
+        if (distributionChart) {
+            distributionChart.data.datasets[0].data = [
+                {{ metrics_data.successful_requests|default:0 }},
+                {{ metrics_data.error_requests|default:0 }} * 0.6,
+                {{ metrics_data.error_requests|default:0 }} * 0.4,
+                {{ metrics_data.total_requests|default:0 }} * 0.05
+            ];
+            distributionChart.update('none');
+        }
+    }
+    
+    // Инициализация всех графиков при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        initCPUChart();
+        initMemoryChart();
+        initRequestsChart();
+        initDistributionChart();
+        
+        // Автообновление графиков каждые 30 секунд
+        setInterval(function() {
+            refreshCPUChart();
+            refreshMemoryChart();
+            refreshRequestsChart();
+            refreshDistributionChart();
+        }, 30000);
+    });
+</script>
+{% endblock %}

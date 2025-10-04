@@ -1,0 +1,67 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Загрузка документа - WARA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">📤 Загрузка документа</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">
+                            {{ form.title.label }}
+                        </label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger">
+                                {% for error in form.title.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Если оставить пустым, название будет автоматически взято из имени файла
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.file.id_for_label }}" class="form-label">
+                            {{ form.file.label }}
+                        </label>
+                        {{ form.file }}
+                        {% if form.file.errors %}
+                            <div class="text-danger">
+                                {% for error in form.file.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Поддерживаются только файлы .docx размером до 10 МБ
+                        </div>
+                        <div class="alert alert-info mt-2">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Автоматическая обработка:</strong> После загрузки документ будет автоматически обработан для извлечения содержимого, разделов и таблиц.
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'documents:list' %}" class="btn btn-secondary me-md-2">
+                            Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            📤 Загрузить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

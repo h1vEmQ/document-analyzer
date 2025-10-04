@@ -1,0 +1,52 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Выход из системы - WARA{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header text-center bg-success text-white">
+                    <h4 class="mb-0">👋 Выход выполнен</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle" style="font-size: 4rem; color: #28a745;"></i>
+                    </div>
+                    <h5 class="card-title">Вы успешно вышли из системы</h5>
+                    <p class="text-muted">Спасибо за использование WARA!</p>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'users:login' %}" class="btn btn-primary btn-lg">
+                            🔐 Войти снова
+                        </a>
+                        <a href="/" class="btn btn-outline-secondary">
+                            🏠 На главную
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 15px;
+    }
+    
+    .card-header {
+        border-radius: 15px 15px 0 0 !important;
+    }
+    
+    .btn {
+        border-radius: 8px;
+    }
+    
+    body {
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}

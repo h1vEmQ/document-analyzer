@@ -1,0 +1,351 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Состояние сервера | {{ site_title|default:"WARA" }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:server_settings' %}">Настройки сервера</a>
+    &rsaquo; Состояние сервера
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .health-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .health-section {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .health-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 15px 20px;
+        font-size: 18px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .health-content {
+        padding: 20px;
+    }
+    
+    .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .status-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        border-left: 4px solid #28a745;
+        transition: transform 0.3s ease;
+    }
+    
+    .status-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .status-card.warning {
+        border-left-color: #ffc107;
+    }
+    
+    .status-card.error {
+        border-left-color: #dc3545;
+    }
+    
+    .status-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #28a745;
+        margin-bottom: 5px;
+    }
+    
+    .status-card.warning .status-value {
+        color: #ffc107;
+    }
+    
+    .status-card.error .status-value {
+        color: #dc3545;
+    }
+    
+    .status-label {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-healthy {
+        background-color: #28a745;
+    }
+    
+    .status-warning {
+        background-color: #ffc107;
+    }
+    
+    .status-error {
+        background-color: #dc3545;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-block;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #0056b3;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .refresh-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 20px;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+    }
+    
+    .refresh-btn:hover {
+        background: #218838;
+        transform: scale(1.1);
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.3s ease;
+    }
+    
+    .progress-fill.warning {
+        background: linear-gradient(90deg, #ffc107, #ffca2c);
+    }
+    
+    .progress-fill.error {
+        background: linear-gradient(90deg, #dc3545, #e74c3c);
+    }
+    
+    @media (max-width: 768px) {
+        .health-container {
+            padding: 10px;
+        }
+        
+        .status-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .refresh-btn {
+            bottom: 10px;
+            right: 10px;
+        }
+    }
+</style>
+
+<script>
+function refreshHealthData() {
+    location.reload();
+}
+
+// Автоматическое обновление каждые 30 секунд
+setInterval(refreshHealthData, 30000);
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="health-container">
+    <h1 style="margin-bottom: 30px; color: #333; text-align: center;">
+        <i class="fas fa-heartbeat"></i> Состояние сервера
+    </h1>
+    
+    {% if health_data.error %}
+        <div class="alert alert-danger">
+            <h4>Ошибка получения данных</h4>
+            <p>{{ health_data.error }}</p>
+        </div>
+    {% else %}
+        <!-- Общий статус -->
+        <div class="health-section">
+            <div class="health-header">
+                <i class="fas fa-heartbeat"></i>
+                Общий статус сервера
+                <span class="status-indicator status-{{ health_data.status }}"></span>
+            </div>
+            <div class="health-content">
+                <div class="status-grid">
+                    <div class="status-card {% if health_data.cpu_percent > 80 %}warning{% elif health_data.cpu_percent > 95 %}error{% endif %}">
+                        <div class="status-value">{{ health_data.cpu_percent|floatformat:1 }}%</div>
+                        <div class="status-label">Использование CPU</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill {% if health_data.cpu_percent > 80 %}warning{% elif health_data.cpu_percent > 95 %}error{% endif %}" 
+                                 style="width: {{ health_data.cpu_percent }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card {% if health_data.memory_percent > 80 %}warning{% elif health_data.memory_percent > 95 %}error{% endif %}">
+                        <div class="status-value">{{ health_data.memory_percent|floatformat:1 }}%</div>
+                        <div class="status-label">Использование памяти</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill {% if health_data.memory_percent > 80 %}warning{% elif health_data.memory_percent > 95 %}error{% endif %}" 
+                                 style="width: {{ health_data.memory_percent }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card {% if health_data.disk_percent > 85 %}warning{% elif health_data.disk_percent > 95 %}error{% endif %}">
+                        <div class="status-value">{{ health_data.disk_percent|floatformat:1 }}%</div>
+                        <div class="status-label">Использование диска</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill {% if health_data.disk_percent > 85 %}warning{% elif health_data.disk_percent > 95 %}error{% endif %}" 
+                                 style="width: {{ health_data.disk_percent }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-value">{{ health_data.process_count }}</div>
+                        <div class="status-label">Активных процессов</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Детальная информация -->
+        <div class="health-section">
+            <div class="health-header">
+                <i class="fas fa-info-circle"></i>
+                Детальная информация
+            </div>
+            <div class="health-content">
+                <div class="status-grid">
+                    <div class="status-card">
+                        <div class="status-value">{{ health_data.load_avg.0|floatformat:2 }}</div>
+                        <div class="status-label">Средняя загрузка (1 мин)</div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-value">{{ health_data.load_avg.1|floatformat:2 }}</div>
+                        <div class="status-label">Средняя загрузка (5 мин)</div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-value">{{ health_data.load_avg.2|floatformat:2 }}</div>
+                        <div class="status-label">Средняя загрузка (15 мин)</div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-value">{{ health_data.timestamp }}</div>
+                        <div class="status-label">Время обновления</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Сетевая активность -->
+        <div class="health-section">
+            <div class="health-header">
+                <i class="fas fa-network-wired"></i>
+                Сетевая активность
+            </div>
+            <div class="health-content">
+                <div class="status-grid">
+                    <div class="status-card">
+                        <div class="status-value">{{ health_data.network_bytes_sent|filesizeformat }}</div>
+                        <div class="status-label">Отправлено данных</div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-value">{{ health_data.network_bytes_recv|filesizeformat }}</div>
+                        <div class="status-label">Получено данных</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Кнопки действий -->
+    <div class="health-section">
+        <div class="health-content">
+            <button onclick="refreshHealthData()" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> Обновить данные
+            </button>
+            
+            <a href="{% url 'admin:server_metrics' %}" class="btn btn-primary">
+                <i class="fas fa-chart-line"></i> Метрики сервера
+            </a>
+            
+            <a href="{% url 'admin:server_settings' %}" class="btn btn-secondary">
+                <i class="fas fa-cog"></i> Настройки сервера
+            </a>
+            
+            <a href="{% url 'admin:index' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Вернуться в админ-панель
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Кнопка обновления -->
+<button class="refresh-btn" onclick="refreshHealthData()" title="Обновить данные">
+    <i class="fas fa-sync-alt"></i>
+</button>
+{% endblock %}

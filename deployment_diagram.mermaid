@@ -1,0 +1,55 @@
+graph TB
+    %% Внешняя сеть
+    subgraph "Внешняя сеть"
+        INTERNET[Интернет]
+        ADMIN[Администратор]
+        MANAGER[Руководитель]
+        VIEWER[Пользователь]
+    end
+
+    %% Основной сервер
+    subgraph "Основной сервер РЕДОС 7.3"
+        subgraph "Django Приложение"
+            DJANGO_SERVER[РЕДОС 7.3 Server<br/>Apache HTTP Server<br/>Django Application<br/>SQLite Database<br/>File Storage<br/>Django Email Backend<br/>SELinux Enforcing]
+        end
+        
+        subgraph "Системные сервисы"
+            SYSTEM_SERVICES[РЕДОС 7.3<br/>rsyslog<br/>auditd<br/>firewalld<br/>Базовые сервисы]
+        end
+    end
+
+    %% Сетевая инфраструктура
+    subgraph "Сетевая инфраструктура"
+        SWITCH[Коммутатор]
+        ROUTER[Маршрутизатор]
+        FIREWALL[Маршрутизатор с файрволом]
+    end
+
+    %% Соединения
+    INTERNET --> FIREWALL
+    ADMIN --> FIREWALL
+    MANAGER --> FIREWALL
+    VIEWER --> FIREWALL
+    
+    FIREWALL --> ROUTER
+    ROUTER --> SWITCH
+    SWITCH --> DJANGO_SERVER
+    SWITCH --> SYSTEM_SERVICES
+
+    %% Безопасность
+    subgraph "Безопасность"
+        SELINUX_NET[SELinux Policies<br/>Mandatory Access Control]
+        AUDIT_NET[auditd Logging<br/>Security Audit]
+        FIREWALL_NET[firewalld<br/>Network Security]
+    end
+
+    %% Стили
+    classDef externalStyle fill:#e3f2fd
+    classDef serverStyle fill:#f3e5f5
+    classDef networkStyle fill:#fff3e0
+    classDef securityStyle fill:#ffebee
+
+    class INTERNET,ADMIN,MANAGER,VIEWER externalStyle
+    class DJANGO_SERVER,SYSTEM_SERVICES serverStyle
+    class SWITCH,ROUTER,FIREWALL networkStyle
+    class SELINUX_NET,AUDIT_NET,FIREWALL_NET securityStyle

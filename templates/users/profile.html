@@ -1,0 +1,105 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Профиль пользователя - WARA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">👤 Профиль пользователя</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Персональная информация</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Имя пользователя:</strong></td>
+                                <td>{{ profile_user.username }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Имя:</strong></td>
+                                <td>{{ profile_user.first_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Фамилия:</strong></td>
+                                <td>{{ profile_user.last_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Email:</strong></td>
+                                <td>{{ profile_user.email }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Роль:</strong></td>
+                                <td>
+                                    <span class="badge bg-primary">
+                                        {{ profile_user.get_role_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Отдел:</strong></td>
+                                <td>{{ profile_user.department|default:"Не указан" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Телефон:</strong></td>
+                                <td>{{ profile_user.phone|default:"Не указан" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Статистика</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Дата регистрации:</strong></td>
+                                <td>{{ profile_user.date_joined|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Последний вход:</strong></td>
+                                <td>
+                                    {% if profile_user.last_login %}
+                                        {{ profile_user.last_login|date:"d.m.Y H:i" }}
+                                    {% else %}
+                                        Никогда
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Активен:</strong></td>
+                                <td>
+                                    {% if profile_user.is_active %}
+                                        <span class="badge bg-success">Да</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Нет</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Персонал:</strong></td>
+                                <td>
+                                    {% if profile_user.is_staff %}
+                                        <span class="badge bg-warning">Да</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Нет</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if profile_user.notification_settings %}
+                    <div class="mt-4">
+                        <h5>Настройки уведомлений</h5>
+                        <div class="bg-light p-3 rounded">
+                            <pre>{{ profile_user.notification_settings|pprint }}</pre>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

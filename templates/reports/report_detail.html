@@ -1,0 +1,258 @@
+{% extends 'base/base.html' %}
+
+{% block title %}{{ report.title }} - WARA{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1>📊 {{ report.title }}</h1>
+                {% if total_versions > 1 %}
+                    <div class="d-flex align-items-center mt-2">
+                        <span class="badge bg-info me-2">
+                            <i class="fas fa-code-branch"></i> {{ total_versions }} версий
+                        </span>
+                        {% if not is_current_latest %}
+                            <span class="badge bg-warning me-2">
+                                <i class="fas fa-info-circle"></i> Версия {{ report.version }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-success me-2">
+                                <i class="fas fa-star"></i> Последняя версия
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="btn-group" role="group">
+                {% if report.file %}
+                    <a href="{% url 'reports:download' report.pk %}" class="btn btn-success">
+                        📥 Скачать отчет
+                    </a>
+                {% endif %}
+                <a href="{% url 'reports:delete' report.pk %}" class="btn btn-danger">
+                    🗑️ Удалить отчет
+                </a>
+            </div>
+        </div>
+
+        {% if total_versions > 1 %}
+            <!-- Селектор версий -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-code-branch"></i> Выбор версии отчета
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="version-selector" class="form-label">Выберите версию для просмотра:</label>
+                            <select class="form-select" id="version-selector" onchange="changeReportVersion(this.value)">
+                                {% for version in all_versions %}
+                                    <option value="{{ version.pk }}" {% if version.pk == report.pk %}selected{% endif %}>
+                                        v{{ version.version }} - {{ version.generated_date|date:"d.m.Y H:i" }}
+                                        {% if version.is_latest_version %} (Последняя){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Информация о версиях:</label>
+                            <div class="alert alert-light">
+                                <small>
+                                    <strong>Всего версий:</strong> {{ total_versions }}<br>
+                                    <strong>Текущая версия:</strong> v{{ report.version }}<br>
+                                    <strong>Последняя версия:</strong> v{{ latest_version.version }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>📋 Информация об отчете</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Название:</strong></td>
+                                <td>{{ report.title }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Формат:</strong></td>
+                                <td>
+                                    <span class="badge bg-primary">{{ report.get_format_display }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Версия:</strong></td>
+                                <td>
+                                    <span class="badge bg-secondary">v{{ report.version }}</span>
+                                    {% if report.is_latest_version %}
+                                        <span class="badge bg-success ms-1">Последняя</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Статус:</strong></td>
+                                <td>
+                                    {% if report.status == 'generating' %}
+                                        <span class="badge bg-warning">Генерируется</span>
+                                    {% elif report.status == 'ready' %}
+                                        <span class="badge bg-success">Готов</span>
+                                    {% elif report.status == 'sent' %}
+                                        <span class="badge bg-info">Отправлен</span>
+                                    {% elif report.status == 'error' %}
+                                        <span class="badge bg-danger">Ошибка</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Сравнение:</strong></td>
+                                <td>
+                                    <a href="{% url 'analysis:detail' report.comparison.pk %}">
+                                        {{ report.comparison.title }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Дата генерации:</strong></td>
+                                <td>{{ report.generated_date|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            {% if report.sent_date %}
+                                <tr>
+                                    <td><strong>Дата отправки:</strong></td>
+                                    <td>{{ report.sent_date|date:"d.m.Y H:i" }}</td>
+                                </tr>
+                            {% endif %}
+                            {% if report.generation_time %}
+                                <tr>
+                                    <td><strong>Время генерации:</strong></td>
+                                    <td>{{ report.generation_time }} сек</td>
+                                </tr>
+                            {% endif %}
+                            {% if report.file_size %}
+                                <tr>
+                                    <td><strong>Размер файла:</strong></td>
+                                    <td>{{ report.get_file_size_mb }} МБ</td>
+                                </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>⚙️ Настройки генерации</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Шаблон:</strong></td>
+                                <td>{{ report.template_used }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Включить сводку:</strong></td>
+                                <td>
+                                    {% if report.include_summary %}
+                                        <span class="badge bg-success">Да</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Нет</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Включить детали:</strong></td>
+                                <td>
+                                    {% if report.include_details %}
+                                        <span class="badge bg-success">Да</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Нет</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Включить таблицы:</strong></td>
+                                <td>
+                                    {% if report.include_tables %}
+                                        <span class="badge bg-success">Да</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Нет</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if report.email_recipients %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>📧 Email уведомления</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Статус отправки:</strong>
+                                    {% if report.email_sent %}
+                                        <span class="badge bg-success">Отправлено</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Не отправлено</span>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Получатели:</strong>
+                                    <ul class="list-unstyled">
+                                        {% for recipient in report.email_recipients %}
+                                            <li><small>{{ recipient }}</small></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if report.summary_data %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>📈 Данные сводки</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="bg-light p-3 rounded">
+                                <pre>{{ report.summary_data|pprint }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function changeReportVersion(versionId) {
+    if (versionId) {
+        // Перенаправляем на детальную страницу выбранной версии
+        window.location.href = '/reports/' + versionId + '/';
+    }
+}
+</script>
+{% endblock %}

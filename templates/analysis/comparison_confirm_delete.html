@@ -1,0 +1,107 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Удалить анализ - WARA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Подтверждение удаления анализа
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h5><i class="fas fa-warning"></i> Внимание!</h5>
+                    <p class="mb-0">
+                        Вы собираетесь удалить анализ <strong>"{{ object.title }}"</strong>.
+                        Это действие нельзя отменить!
+                    </p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-info-circle"></i> Информация об анализе:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Название:</strong> {{ object.title }}</li>
+                            <li><strong>Статус:</strong> 
+                                <span class="badge 
+                                    {% if object.status == 'completed' %}bg-success
+                                    {% elif object.status == 'processing' %}bg-warning
+                                    {% elif object.status == 'error' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ object.get_status_display }}
+                                </span>
+                            </li>
+                            <li><strong>Дата создания:</strong> {{ object.created_date|date:"d.m.Y H:i" }}</li>
+                            {% if object.completed_date %}
+                                <li><strong>Дата завершения:</strong> {{ object.completed_date|date:"d.m.Y H:i" }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-file-alt"></i> Связанные документы:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Базовый документ:</strong> {{ object.base_document.title }}</li>
+                            <li><strong>Сравниваемый документ:</strong> {{ object.compared_document.title }}</li>
+                        </ul>
+                        
+                        {% if object.reports.exists %}
+                            <h6><i class="fas fa-chart-bar"></i> Связанные отчеты:</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Количество отчетов:</strong> {{ object.reports.count }}</li>
+                                {% for report in object.reports.all %}
+                                    <li>
+                                        <small class="text-muted">
+                                            • {{ report.get_format_display }} (v{{ report.version }})
+                                        </small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="fas fa-info-circle"></i>
+                                    Все связанные отчеты также будут удалены!
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if object.changes.exists %}
+                    <div class="mt-3">
+                        <h6><i class="fas fa-list"></i> Найденные изменения:</h6>
+                        <div class="alert alert-light">
+                            <p class="mb-1">
+                                <strong>Всего изменений:</strong> {{ object.changes.count }}
+                            </p>
+                            {% if object.changes_summary %}
+                                <small class="text-muted">
+                                    • Добавлено: {{ object.changes_summary.added|default:0 }}<br>
+                                    • Удалено: {{ object.changes_summary.removed|default:0 }}<br>
+                                    • Изменено: {{ object.changes_summary.modified|default:0 }}
+                                </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'analysis:detail' object.pk %}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Да, удалить анализ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

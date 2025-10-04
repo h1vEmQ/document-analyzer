@@ -1,0 +1,136 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Удалить пользователя - WARA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Подтверждение удаления пользователя
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h5><i class="fas fa-warning"></i> Внимание!</h5>
+                    <p class="mb-0">
+                        Вы собираетесь удалить пользователя <strong>"{{ object.username }}"</strong>.
+                        Это действие нельзя отменить и приведет к удалению всех связанных данных!
+                    </p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user"></i> Информация о пользователе:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Имя пользователя:</strong> {{ object.username }}</li>
+                            <li><strong>Email:</strong> {{ object.email|default:"—" }}</li>
+                            <li><strong>Имя:</strong> {{ object.first_name|default:"—" }} {{ object.last_name|default:"" }}</li>
+                            <li><strong>Роль:</strong> 
+                                {% if object.is_superuser %}
+                                    <span class="badge bg-danger">Суперпользователь</span>
+                                {% elif object.role == 'admin' %}
+                                    <span class="badge bg-warning">Администратор</span>
+                                {% elif object.role == 'manager' %}
+                                    <span class="badge bg-info">Менеджер</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Пользователь</span>
+                                {% endif %}
+                            </li>
+                            <li><strong>Статус:</strong> 
+                                {% if object.is_active %}
+                                    <span class="badge bg-success">Активен</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Неактивен</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-calendar"></i> Даты:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Дата регистрации:</strong> {{ object.date_joined|date:"d.m.Y H:i" }}</li>
+                            <li><strong>Последний вход:</strong> 
+                                {% if object.last_login %}
+                                    {{ object.last_login|date:"d.m.Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">Никогда</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger mt-3">
+                    <h6><i class="fas fa-database"></i> Связанные данные, которые будут удалены:</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                                <div class="fw-bold">{{ object.document_set.count }}</div>
+                                <small class="text-muted">Документов</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-balance-scale fa-2x text-success mb-2"></i>
+                                <div class="fw-bold">{{ object.comparison_set.count }}</div>
+                                <small class="text-muted">Сравнений</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-chart-bar fa-2x text-info mb-2"></i>
+                                <div class="fw-bold">{{ object.report_set.count }}</div>
+                                <small class="text-muted">Отчетов</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-info-circle"></i> Важная информация:</h6>
+                    <ul class="mb-0">
+                        <li>Все документы пользователя будут удалены безвозвратно</li>
+                        <li>Все сравнения и анализы будут удалены</li>
+                        <li>Все сгенерированные отчеты будут удалены</li>
+                        <li>Физические файлы на сервере будут удалены</li>
+                        <li>Это действие необратимо!</li>
+                    </ul>
+                </div>
+
+                {% if object == request.user %}
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-ban"></i> Ограничение удаления:</h6>
+                        <p class="mb-0">
+                            <strong>Нельзя удалить самого себя!</strong><br>
+                            Выберите другого администратора для выполнения этой операции.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'users:admin_detail' object.pk %}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Отмена
+                        </a>
+                        {% if object != request.user %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Да, удалить пользователя
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-danger" disabled>
+                                <i class="fas fa-ban"></i> Удаление заблокировано
+                            </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

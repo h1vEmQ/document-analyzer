@@ -1,0 +1,90 @@
+graph TB
+    %% Клиентский уровень
+    subgraph "Клиентский уровень"
+        WEB[Веб-интерфейс<br/>Django Templates + Bootstrap]
+        EMAIL[Email клиент<br/>Получение отчетов]
+    end
+
+    %% Веб-серверный уровень
+    subgraph "Веб-серверный уровень"
+        APACHE[Apache HTTP Server 2.4+<br/>mod_wsgi<br/>SSL/TLS]
+    end
+
+    %% Прикладной уровень
+    subgraph "Django Приложение"
+        subgraph "Django Framework"
+            DJANGO[Django<br/>Веб-фреймворк<br/>Аутентификация<br/>Шаблоны]
+        end
+        
+        subgraph "Django Apps"
+            UPLOAD[Модуль загрузки<br/>документов]
+            PARSER[Модуль парсинга<br/>Word документов]
+            ANALYZER[Модуль анализа<br/>изменений]
+            REPORT[Модуль генерации<br/>отчетов]
+            EMAIL_SVC[Email сервис<br/>уведомления]
+        end
+    end
+
+    %% Уровень данных
+    subgraph "Уровень данных"
+        SQLITE[(SQLite<br/>База данных Django)]
+        FILES[Файловое хранилище<br/>Django File Storage]
+    end
+
+    %% Системные сервисы
+    subgraph "Системные сервисы"
+        DJANGO_EMAIL[Django Email Backend<br/>Отправка email]
+        RSYSLOG[rsyslog<br/>Логирование]
+        AUDIT[auditd<br/>Базовый аудит]
+        FIREWALL[firewalld<br/>Сетевой экран]
+    end
+
+    %% Безопасность
+    subgraph "Безопасность РЕДОС"
+        SELINUX[SELinux<br/>Принудительный режим]
+    end
+
+    %% Соединения
+    WEB --> APACHE
+    EMAIL --> DJANGO_EMAIL
+    APACHE --> DJANGO
+    DJANGO --> UPLOAD
+    DJANGO --> PARSER
+    DJANGO --> ANALYZER
+    DJANGO --> REPORT
+    DJANGO --> EMAIL_SVC
+    
+    UPLOAD --> SQLITE
+    PARSER --> SQLITE
+    ANALYZER --> SQLITE
+    REPORT --> SQLITE
+    
+    UPLOAD --> FILES
+    REPORT --> FILES
+    
+    EMAIL_SVC --> DJANGO_EMAIL
+    
+    %% Системные соединения
+    DJANGO --> RSYSLOG
+    DJANGO --> AUDIT
+    
+    %% Безопасность
+    SELINUX -.-> DJANGO
+    SELINUX -.-> SQLITE
+    SELINUX -.-> FILES
+    FIREWALL -.-> APACHE
+
+    %% Стили
+    classDef clientStyle fill:#e1f5fe
+    classDef webStyle fill:#f3e5f5
+    classDef appStyle fill:#e8f5e8
+    classDef dataStyle fill:#fff3e0
+    classDef systemStyle fill:#fce4ec
+    classDef securityStyle fill:#ffebee
+
+    class WEB,EMAIL clientStyle
+    class APACHE webStyle
+    class DJANGO,UPLOAD,PARSER,ANALYZER,REPORT,EMAIL_SVC appStyle
+    class SQLITE,FILES dataStyle
+    class DJANGO_EMAIL,RSYSLOG,AUDIT,FIREWALL systemStyle
+    class SELINUX securityStyle

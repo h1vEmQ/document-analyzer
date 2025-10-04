@@ -1,0 +1,178 @@
+{% extends 'users/admin/base.html' %}
+{% load static %}
+
+{% block title %}Сброс настроек сервера{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reset-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .reset-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .warning-icon {
+        font-size: 4rem;
+        color: #ffc107;
+        margin-bottom: 20px;
+    }
+    
+    .reset-card h2 {
+        color: #495057;
+        margin-bottom: 20px;
+    }
+    
+    .reset-card p {
+        color: #6c757d;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-right: 10px;
+    }
+    
+    .btn-danger:hover {
+        background: #c82333;
+        border-color: #bd2130;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        text-decoration: none;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        border-color: #545b62;
+        color: white;
+    }
+    
+    .settings-preview {
+        background: #f8f9fa;
+        border-radius: 6px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: left;
+    }
+    
+    .settings-preview h5 {
+        color: #495057;
+        margin-bottom: 15px;
+    }
+    
+    .preview-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding: 5px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .preview-item:last-child {
+        border-bottom: none;
+    }
+    
+    .preview-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+    
+    .preview-value {
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="reset-container">
+                <div class="reset-card">
+                    <div class="warning-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    
+                    <h2>Сброс настроек сервера</h2>
+                    
+                    <p>
+                        Вы уверены, что хотите сбросить все настройки сервера к значениям по умолчанию?
+                        Это действие нельзя отменить.
+                    </p>
+                    
+                    <!-- Предварительный просмотр настроек по умолчанию -->
+                    <div class="settings-preview">
+                        <h5><i class="fas fa-eye"></i> Настройки по умолчанию</h5>
+                        <div class="preview-item">
+                            <span class="preview-label">Название сервера:</span>
+                            <span class="preview-value">Report analyzer Server</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Максимальные запросы:</span>
+                            <span class="preview-value">100</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Таймаут запросов:</span>
+                            <span class="preview-value">30 сек</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Уровень логирования:</span>
+                            <span class="preview-value">INFO</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Кэширование:</span>
+                            <span class="preview-value">Включено</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Ограничение запросов:</span>
+                            <span class="preview-value">Включено</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Мониторинг:</span>
+                            <span class="preview-value">Включен</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Резервное копирование:</span>
+                            <span class="preview-value">Включено</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-danger">
+                                <i class="fas fa-undo"></i> Да, сбросить настройки
+                            </button>
+                        </form>
+                        <a href="{% url 'users:admin_server_settings' %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Отмена
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

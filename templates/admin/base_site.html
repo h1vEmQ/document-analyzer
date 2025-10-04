@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | {{ site_title|default:"Report analyzer" }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:"Report analyzer Админ-панель" }}</a></h1>
+{% endblock %}
+
+{% block nav-global %}
+<div class="nav-global">
+    <a href="{% url 'admin:settings' %}" class="settings-link" style="color: #fff; text-decoration: none; padding: 10px 15px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-left: 10px;">
+        <i class="fas fa-cog"></i> Настройки
+    </a>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .settings-link:hover, .server-settings-link:hover {
+        background: rgba(255,255,255,0.2) !important;
+        color: #fff !important;
+    }
+    
+    .nav-global {
+        display: flex;
+        align-items: center;
+    }
+    
+    #site-name {
+        margin: 0;
+        padding: 0;
+    }
+    
+    #site-name a {
+        color: #fff;
+        text-decoration: none;
+    }
+    
+    #site-name a:hover {
+        color: #fff;
+    }
+</style>
+{% endblock %}

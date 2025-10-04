@@ -1,0 +1,470 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* Админ-панель стили */
+    .admin-container {
+        min-height: 100vh;
+        background-color: #f8f9fa;
+    }
+    
+    .admin-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px 0;
+        margin-bottom: 30px;
+    }
+    
+    .admin-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+    
+    .admin-header .breadcrumb {
+        background: none;
+        padding: 0;
+        margin: 10px 0 0 0;
+        color: rgba(255,255,255,0.8);
+    }
+    
+    .admin-header .breadcrumb-item + .breadcrumb-item::before {
+        color: rgba(255,255,255,0.8);
+        content: ">";
+    }
+    
+    .admin-header .breadcrumb-item a {
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+    }
+    
+    .admin-header .breadcrumb-item a:hover {
+        color: white;
+    }
+    
+    .admin-header .breadcrumb-item.active {
+        color: white;
+    }
+    
+    .admin-sidebar {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .admin-sidebar h5 {
+        color: #495057;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .admin-sidebar .nav-link {
+        color: #6c757d;
+        padding: 8px 0;
+        border: none;
+        background: none;
+        text-decoration: none;
+        display: block;
+        transition: color 0.3s ease;
+    }
+    
+    .admin-sidebar .nav-link:hover {
+        color: #007bff;
+    }
+    
+    .admin-sidebar .nav-link.active {
+        color: #007bff;
+        font-weight: 600;
+    }
+    
+    .admin-content {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .admin-footer {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        color: #6c757d;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Кнопки админки */
+    .btn-admin {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-admin:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #0056b3;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #545b62;
+        color: white;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: #1e7e34;
+        color: white;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #c82333;
+        color: white;
+    }
+    
+    .btn-warning {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .btn-warning:hover {
+        background: #e0a800;
+        color: #212529;
+    }
+    
+    .btn-info {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .btn-info:hover {
+        background: #138496;
+        color: white;
+    }
+    
+    /* Карточки */
+    .admin-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #007bff;
+    }
+    
+    .admin-card h4 {
+        color: #495057;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .admin-card h4 i {
+        color: #007bff;
+    }
+    
+    /* Таблицы */
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    
+    .admin-table th,
+    .admin-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .admin-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .admin-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+    
+    /* Формы */
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+        display: block;
+    }
+    
+    .form-control {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 10px 12px;
+        font-size: 14px;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    .form-control:focus {
+        border-color: #80bdff;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    
+    /* Статусы */
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .status-admin {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-user {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    /* Уведомления */
+    .alert {
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 6px;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+    
+    .alert-danger {
+        background: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+    
+    .alert-warning {
+        background: #fff3cd;
+        border-color: #ffeaa7;
+        color: #856404;
+    }
+    
+    .alert-info {
+        background: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .admin-header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .admin-content {
+            padding: 20px;
+        }
+        
+        .admin-sidebar {
+            margin-bottom: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Заголовок админки -->
+    <div class="admin-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1>
+                        <i class="fas fa-cogs"></i>
+                        {% block admin_title %}Админ-панель Report analyzer{% endblock %}
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'documents:document_list' %}">Главная</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'users:admin_list' %}">Админ-панель</a></li>
+                            {% block breadcrumb %}{% endblock %}
+                        </ol>
+                    </nav>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'users:admin_list' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-users"></i> Пользователи
+                        </a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'users:admin_server_settings' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-server"></i> Сервер
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <!-- Боковая панель -->
+            <div class="col-lg-3">
+                <div class="admin-sidebar">
+                    <h5><i class="fas fa-user-shield"></i> Управление</h5>
+                    <nav class="nav flex-column">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'admin_list' %}active{% endif %}" 
+                           href="{% url 'users:admin_list' %}">
+                            <i class="fas fa-users"></i> Пользователи
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'admin_create' %}active{% endif %}" 
+                           href="{% url 'users:admin_create' %}">
+                            <i class="fas fa-user-plus"></i> Создать пользователя
+                        </a>
+                        {% if user.is_staff %}
+                        <hr>
+                        <a class="nav-link {% if 'application' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'users:admin_application_settings' %}">
+                            <i class="fas fa-cog"></i> Настройки приложения
+                        </a>
+                        <a class="nav-link {% if 'server' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'users:admin_server_settings' %}">
+                            <i class="fas fa-server"></i> Настройки сервера
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'admin_server_health' %}active{% endif %}" 
+                           href="{% url 'users:admin_server_health' %}">
+                            <i class="fas fa-heartbeat"></i> Состояние сервера
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'admin_server_metrics' %}active{% endif %}" 
+                           href="{% url 'users:admin_server_metrics' %}">
+                            <i class="fas fa-chart-bar"></i> Метрики
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'admin_bulk_delete_documents' %}active{% endif %}" 
+                           href="{% url 'users:admin_bulk_delete_documents' %}" style="color: #dc3545;">
+                            <i class="fas fa-trash-alt"></i> Удалить все документы
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Основной контент -->
+            <div class="col-lg-9">
+                <div class="admin-content">
+                    {% block admin_content %}
+                    <!-- Контент страницы -->
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Футер админки -->
+    <div class="container">
+        <div class="admin-footer">
+            <p class="mb-0">
+                <i class="fas fa-copyright"></i> 
+                Report analyzer - Система анализа документов | 
+                Админ-панель для пользователя <strong>{{ user.username }}</strong>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Админ-панель JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+        // Подсветка активных ссылок
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.admin-sidebar .nav-link');
+        
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+            }
+        });
+        
+        // Подтверждение удаления
+        const deleteButtons = document.querySelectorAll('[data-confirm]');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const message = this.getAttribute('data-confirm');
+                if (!confirm(message)) {
+                    e.preventDefault();
+                }
+            });
+        });
+        
+        // Автоскрытие уведомлений
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    alert.remove();
+                }, 300);
+            }, 5000);
+        });
+    });
+</script>
+{% endblock %}

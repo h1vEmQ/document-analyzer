@@ -1,0 +1,138 @@
+{% extends 'users/admin/base.html' %}
+{% load static %}
+
+{% block title %}Сброс настроек приложения{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reset-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .reset-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #ffc107;
+        text-align: center;
+    }
+    
+    .reset-icon {
+        font-size: 4rem;
+        color: #ffc107;
+        margin-bottom: 20px;
+    }
+    
+    .reset-title {
+        color: #495057;
+        margin-bottom: 20px;
+    }
+    
+    .reset-message {
+        color: #6c757d;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+    
+    .btn-confirm {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+    
+    .btn-confirm:hover {
+        background: #c82333;
+        border-color: #bd2130;
+        color: white;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        text-decoration: none;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+        border-color: #545b62;
+        color: white;
+    }
+    
+    .warning-list {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 20px 0;
+        text-align: left;
+    }
+    
+    .warning-list h6 {
+        color: #856404;
+        margin-bottom: 10px;
+    }
+    
+    .warning-list ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #856404;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="reset-container">
+                <div class="reset-card">
+                    <div class="reset-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    
+                    <h2 class="reset-title">Сброс настроек приложения</h2>
+                    
+                    <p class="reset-message">
+                        Вы уверены, что хотите сбросить все настройки приложения к значениям по умолчанию?
+                        Это действие необратимо и затронет все текущие настройки системы.
+                    </p>
+                    
+                    <div class="warning-list">
+                        <h6><i class="fas fa-exclamation-circle"></i> Внимание!</h6>
+                        <ul>
+                            <li>Все текущие настройки будут потеряны</li>
+                            <li>Формат отчетов по умолчанию будет установлен в PDF</li>
+                            <li>Настройки email уведомлений будут сброшены</li>
+                            <li>Таймауты и лимиты будут восстановлены</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-confirm">
+                            <i class="fas fa-undo"></i> Да, сбросить настройки
+                        </button>
+                        <a href="{% url 'users:admin_application_settings' %}" class="btn-cancel">
+                            <i class="fas fa-times"></i> Отмена
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

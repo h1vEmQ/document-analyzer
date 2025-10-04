@@ -1,0 +1,92 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Создание сравнения - WARA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">🔍 Создание сравнения документов</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">
+                            {{ form.title.label }}
+                        </label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger">
+                                {% for error in form.title.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Если оставить пустым, название будет автоматически создано из имен документов
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.base_document.id_for_label }}" class="form-label">
+                                    {{ form.base_document.label }}
+                                </label>
+                                {{ form.base_document }}
+                                {% if form.base_document.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.base_document.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.compared_document.id_for_label }}" class="form-label">
+                                    {{ form.compared_document.label }}
+                                </label>
+                                {{ form.compared_document }}
+                                {% if form.compared_document.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.compared_document.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Автоматический анализ и отчеты:</strong> После создания сравнения будет автоматически выполнен анализ документов и созданы отчеты в форматах PDF и DOCX.
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'analysis:list' %}" class="btn btn-secondary me-md-2">
+                            Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            ➕ Создать сравнение
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

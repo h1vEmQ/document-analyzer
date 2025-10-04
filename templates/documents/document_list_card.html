@@ -1,0 +1,221 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Мои документы - WARA{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>📄 Мои документы</h2>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'documents:list' %}?view_mode=card" 
+                       class="btn btn-outline-secondary {% if view_mode == 'card' %}active{% endif %}">
+                        <i class="fas fa-th-large"></i> Карточки
+                    </a>
+                    <a href="{% url 'documents:list' %}?view_mode=table" 
+                       class="btn btn-outline-secondary {% if view_mode == 'table' %}active{% endif %}">
+                        <i class="fas fa-table"></i> Таблица
+                    </a>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="text-muted">
+                    Всего документов: {{ documents|length }}
+                </div>
+                <a href="{% url 'documents:upload' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Загрузить документ
+                </a>
+            </div>
+
+            {% if documents %}
+                <div class="row">
+                    {% for document in documents %}
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    {% if document.is_docx %}
+                                        <i class="fas fa-file-word text-primary me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-file text-secondary me-2"></i>
+                                    {% endif %}
+                                    <strong>{{ document.title|truncatechars:20 }}</strong>
+                                </div>
+                                {% if document.status == 'processed' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i>
+                                    </span>
+                                {% elif document.status == 'processing' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </span>
+                                {% elif document.status == 'error' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-clock"></i>
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-file"></i> {{ document.filename }}
+                                    </small>
+                                </div>
+                                
+                                {% if document.content_text %}
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        {{ document.content_text|truncatechars:100 }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <small class="text-muted">Размер</small>
+                                        <div class="fw-bold">{{ document.get_file_size_mb }} МБ</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Дата</small>
+                                        <div class="fw-bold">{{ document.upload_date|date:"d.m.Y" }}</div>
+                                    </div>
+                                </div>
+                                
+                                {% if document.has_content %}
+                                <div class="row text-center mb-3">
+                                    <div class="col-4">
+                                        <small class="text-muted">Разделов</small>
+                                        <div class="fw-bold text-primary">{{ document.get_parsed_sections_count }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Таблиц</small>
+                                        <div class="fw-bold text-info">{{ document.get_parsed_tables_count }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Символов</small>
+                                        <div class="fw-bold text-success">{{ document.content_text|length }}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-footer">
+                                <div class="btn-group w-100" role="group">
+                                    <a href="{% url 'documents:detail' document.pk %}" 
+                                       class="btn btn-outline-primary btn-sm" 
+                                       title="Просмотр">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if document.status == 'processed' %}
+                                        <a href="{% url 'documents:parse' document.pk %}" 
+                                           class="btn btn-outline-info btn-sm" 
+                                           title="Перепарсить">
+                                            <i class="fas fa-sync"></i>
+                                        </a>
+                                    {% endif %}
+                                    <a href="{% url 'documents:delete' document.pk %}" 
+                                       class="btn btn-outline-danger btn-sm" 
+                                       title="Удалить"
+                                       onclick="return confirm('Вы уверены, что хотите удалить документ «{{ document.title }}»?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-file-alt fa-3x text-muted"></i>
+                    </div>
+                    <h4 class="text-muted">Документы не найдены</h4>
+                    <p class="text-muted">У вас пока нет загруженных документов.</p>
+                    <a href="{% url 'documents:upload' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Загрузить первый документ
+                    </a>
+                </div>
+            {% endif %}
+
+            <!-- Пагинация -->
+            {% if is_paginated %}
+                <nav aria-label="Навигация по страницам" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if view_mode %}&view_mode={{ view_mode }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if view_mode %}&view_mode={{ view_mode }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if view_mode %}&view_mode={{ view_mode }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if view_mode %}&view_mode={{ view_mode }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.fa-file-word {
+    color: #2b579a !important;
+}
+
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.25rem;
+    border-bottom-right-radius: 0.25rem;
+}
+</style>
+{% endblock %}

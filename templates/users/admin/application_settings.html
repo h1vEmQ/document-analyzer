@@ -1,0 +1,326 @@
+{% extends 'users/admin/base.html' %}
+{% load static %}
+
+{% block title %}Настройки приложения{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    
+    .settings-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #007bff;
+    }
+    
+    .settings-card h4 {
+        color: #495057;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .settings-card h4 i {
+        margin-right: 10px;
+    }
+    
+    .form-section {
+        margin-bottom: 30px;
+    }
+    
+    .form-section h5 {
+        color: #6c757d;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .btn-save {
+        background: #28a745;
+        border-color: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-save:hover {
+        background: #218838;
+        border-color: #1e7e34;
+        color: white;
+    }
+    
+    .btn-reset {
+        background: #ffc107;
+        border-color: #ffc107;
+        color: #212529;
+        padding: 10px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-left: 10px;
+    }
+    
+    .btn-reset:hover {
+        background: #e0a800;
+        border-color: #d39e00;
+        color: #212529;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-left: 10px;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        border-color: #545b62;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>⚙️ Настройки приложения</h1>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'users:admin_server_settings' %}" class="btn btn-secondary">
+                        <i class="fas fa-server"></i> Настройки сервера
+                    </a>
+                </div>
+            </div>
+
+            <!-- Настройки приложения -->
+            <div class="settings-container">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Основные настройки -->
+                    <div class="settings-card">
+                        <h4><i class="fas fa-info-circle"></i> Основные настройки</h4>
+                        <div class="form-section">
+                            <div class="mb-3">
+                                <label for="{{ form.app_name.id_for_label }}" class="form-label">{{ form.app_name.label }}</label>
+                                {{ form.app_name }}
+                                {% if form.app_name.help_text %}
+                                    <div class="form-text">{{ form.app_name.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.app_name.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.app_description.id_for_label }}" class="form-label">{{ form.app_description.label }}</label>
+                                {{ form.app_description }}
+                                {% if form.app_description.help_text %}
+                                    <div class="form-text">{{ form.app_description.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.app_description.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Настройки документов -->
+                    <div class="settings-card">
+                        <h4><i class="fas fa-file-alt"></i> Настройки документов</h4>
+                        <div class="form-section">
+                            <div class="mb-3">
+                                <label for="{{ form.max_file_size.id_for_label }}" class="form-label">{{ form.max_file_size.label }}</label>
+                                {{ form.max_file_size }}
+                                {% if form.max_file_size.help_text %}
+                                    <div class="form-text">{{ form.max_file_size.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.max_file_size.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.allowed_file_types.id_for_label }}" class="form-label">{{ form.allowed_file_types.label }}</label>
+                                {{ form.allowed_file_types }}
+                                {% if form.allowed_file_types.help_text %}
+                                    <div class="form-text">{{ form.allowed_file_types.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.allowed_file_types.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Настройки анализа -->
+                    <div class="settings-card">
+                        <h4><i class="fas fa-search"></i> Настройки анализа</h4>
+                        <div class="form-section">
+                            <div class="mb-3">
+                                <label for="{{ form.auto_analysis_enabled.id_for_label }}" class="form-label">
+                                    {{ form.auto_analysis_enabled.label }}
+                                    {{ form.auto_analysis_enabled }}
+                                </label>
+                                {% if form.auto_analysis_enabled.help_text %}
+                                    <div class="form-text">{{ form.auto_analysis_enabled.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.auto_analysis_enabled.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.analysis_timeout.id_for_label }}" class="form-label">{{ form.analysis_timeout.label }}</label>
+                                {{ form.analysis_timeout }}
+                                {% if form.analysis_timeout.help_text %}
+                                    <div class="form-text">{{ form.analysis_timeout.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.analysis_timeout.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Настройки отчетов -->
+                    <div class="settings-card">
+                        <h4><i class="fas fa-chart-bar"></i> Настройки отчетов</h4>
+                        <div class="form-section">
+                            <div class="mb-3">
+                                <label for="{{ form.auto_reports_enabled.id_for_label }}" class="form-label">
+                                    {{ form.auto_reports_enabled.label }}
+                                    {{ form.auto_reports_enabled }}
+                                </label>
+                                {% if form.auto_reports_enabled.help_text %}
+                                    <div class="form-text">{{ form.auto_reports_enabled.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.auto_reports_enabled.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.default_report_format.id_for_label }}" class="form-label">{{ form.default_report_format.label }}</label>
+                                {{ form.default_report_format }}
+                                {% if form.default_report_format.help_text %}
+                                    <div class="form-text">{{ form.default_report_format.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.default_report_format.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Настройки уведомлений -->
+                    <div class="settings-card">
+                        <h4><i class="fas fa-envelope"></i> Настройки уведомлений</h4>
+                        <div class="form-section">
+                            <div class="mb-3">
+                                <label for="{{ form.email_notifications_enabled.id_for_label }}" class="form-label">
+                                    {{ form.email_notifications_enabled.label }}
+                                    {{ form.email_notifications_enabled }}
+                                </label>
+                                {% if form.email_notifications_enabled.help_text %}
+                                    <div class="form-text">{{ form.email_notifications_enabled.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.email_notifications_enabled.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.notification_email.id_for_label }}" class="form-label">{{ form.notification_email.label }}</label>
+                                {{ form.notification_email }}
+                                {% if form.notification_email.help_text %}
+                                    <div class="form-text">{{ form.notification_email.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.notification_email.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Настройки безопасности -->
+                    <div class="settings-card">
+                        <h4><i class="fas fa-shield-alt"></i> Настройки безопасности</h4>
+                        <div class="form-section">
+                            <div class="mb-3">
+                                <label for="{{ form.session_timeout.id_for_label }}" class="form-label">{{ form.session_timeout.label }}</label>
+                                {{ form.session_timeout }}
+                                {% if form.session_timeout.help_text %}
+                                    <div class="form-text">{{ form.session_timeout.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.session_timeout.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.max_login_attempts.id_for_label }}" class="form-label">{{ form.max_login_attempts.label }}</label>
+                                {{ form.max_login_attempts }}
+                                {% if form.max_login_attempts.help_text %}
+                                    <div class="form-text">{{ form.max_login_attempts.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.max_login_attempts.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            <button type="submit" class="btn-save">
+                                <i class="fas fa-save"></i> Сохранить настройки приложения
+                            </button>
+                            <a href="{% url 'users:admin_application_settings_reset' %}" class="btn-reset">
+                                <i class="fas fa-undo"></i> Сбросить к умолчанию
+                            </a>
+                        </div>
+                        <div>
+                            <a href="{% url 'users:admin_list' %}" class="btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Назад в админ-панель
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Подсветка важных полей
+        const importantFields = ['default_report_format', 'auto_reports_enabled'];
+        importantFields.forEach(fieldName => {
+            const field = document.querySelector(`[name="${fieldName}"]`);
+            if (field) {
+                field.addEventListener('change', function() {
+                    // Можно добавить дополнительную логику при изменении настроек
+                    console.log(`Изменена настройка ${fieldName}:`, this.value);
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

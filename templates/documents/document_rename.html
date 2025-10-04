@@ -1,0 +1,122 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Переименование документа - WARA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-edit"></i> Переименование документа
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Текущее название:</strong></label>
+                    <p class="form-control-plaintext bg-light p-2 rounded">{{ document.title }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label"><strong>Файл:</strong></label>
+                    <p class="form-control-plaintext bg-light p-2 rounded">
+                        <i class="fas fa-file-word text-primary"></i>
+                        {{ document.filename }}
+                    </p>
+                </div>
+                
+                {% if document.version %}
+                <div class="mb-3">
+                    <label class="form-label"><strong>Версия:</strong></label>
+                    <p class="form-control-plaintext bg-light p-2 rounded">
+                        <span class="badge bg-info">{{ document.version }}</span>
+                        {% if document.is_latest_version %}
+                            <span class="badge bg-success ms-1">Последняя</span>
+                        {% else %}
+                            <span class="badge bg-secondary ms-1">Не последняя</span>
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">
+                            <strong>{{ form.title.label }}</strong>
+                        </label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger">
+                                {% for error in form.title.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i>
+                            Введите новое название для документа. Это название будет отображаться во всех списках и отчетах.
+                        </div>
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'documents:detail' document.pk %}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Информация о документе -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> Информация о документе
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Статус:</strong> 
+                            <span class="badge bg-{% if document.status == 'processed' %}success{% elif document.status == 'processing' %}warning{% elif document.status == 'error' %}danger{% else %}secondary{% endif %}">
+                                {{ document.get_status_display }}
+                            </span>
+                        </p>
+                        <p><strong>Загружен:</strong> {{ document.upload_date|date:"d.m.Y H:i" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Размер файла:</strong> {{ document.get_file_size_mb }} МБ</p>
+                        {% if document.processed_date %}
+                            <p><strong>Обработан:</strong> {{ document.processed_date|date:"d.m.Y H:i" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if document.has_content %}
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <p><strong>Разделов:</strong> {{ document.get_parsed_sections_count }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Таблиц:</strong> {{ document.get_parsed_tables_count }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,586 @@
+{% extends 'users/admin/base.html' %}
+{% load static %}
+
+{% block title %}Настройки сервера{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    
+    .settings-section {
+        background: #fff;
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .settings-section h4 {
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    
+    .form-control {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 8px 12px;
+    }
+    
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    
+    .form-check-input {
+        margin-top: 0.25rem;
+    }
+    
+    .form-check-label {
+        margin-left: 5px;
+    }
+    
+    .btn-save {
+        background: #28a745;
+        border-color: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+    }
+    
+    .btn-save:hover {
+        background: #218838;
+        border-color: #1e7e34;
+        color: white;
+    }
+    
+    .btn-reset {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-left: 10px;
+    }
+    
+    .btn-reset:hover {
+        background: #c82333;
+        border-color: #bd2130;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-left: 10px;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        border-color: #545b62;
+        color: white;
+    }
+    
+    .system-info {
+        background: #e9ecef;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .system-info h5 {
+        color: #495057;
+        margin-bottom: 10px;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+    
+    .info-value {
+        color: #495057;
+    }
+    
+    .nav-tabs {
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 20px;
+    }
+    
+    .nav-tabs .nav-link {
+        color: #495057;
+        border: 1px solid transparent;
+        border-top-left-radius: 0.25rem;
+        border-top-right-radius: 0.25rem;
+        padding: 0.5rem 1rem;
+        text-decoration: none;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-color: #e9ecef #e9ecef #dee2e6;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #495057;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+    }
+    
+    .tab-content {
+        padding-top: 20px;
+    }
+    
+    .alert {
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+    
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+    
+    .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-server text-primary"></i>
+                    Настройки сервера
+                </h2>
+                <div>
+                    <a href="{% url 'users:admin_server_health' %}" class="btn btn-secondary">
+                        <i class="fas fa-heartbeat"></i> Состояние сервера
+                    </a>
+                    <a href="{% url 'users:admin_server_metrics' %}" class="btn btn-secondary">
+                        <i class="fas fa-chart-bar"></i> Метрики
+                    </a>
+                </div>
+            </div>
+
+            <!-- Системная информация -->
+            <div class="system-info">
+                <h5><i class="fas fa-info-circle"></i> Системная информация</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">ОС:</span>
+                            <span class="info-value">{{ system_info.os }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">CPU:</span>
+                            <span class="info-value">{{ system_info.cpu_cores }} ядер</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">Память:</span>
+                            <span class="info-value">{{ system_info.total_memory|floatformat:0 }} ГБ</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Диск:</span>
+                            <span class="info-value">{{ system_info.total_disk|floatformat:0 }} ГБ</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">Python:</span>
+                            <span class="info-value">{{ system_info.python_version }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Django:</span>
+                            <span class="info-value">{{ system_info.django_version }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Настройки сервера -->
+            <div class="settings-container">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Навигация по разделам -->
+                    <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" id="basic-tab" data-bs-toggle="tab" href="#basic" role="tab">
+                                <i class="fas fa-cog"></i> Основные
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="performance-tab" data-bs-toggle="tab" href="#performance" role="tab">
+                                <i class="fas fa-tachometer-alt"></i> Производительность
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="logging-tab" data-bs-toggle="tab" href="#logging" role="tab">
+                                <i class="fas fa-file-alt"></i> Логирование
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="cache-tab" data-bs-toggle="tab" href="#cache" role="tab">
+                                <i class="fas fa-database"></i> Кэширование
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="security-tab" data-bs-toggle="tab" href="#security" role="tab">
+                                <i class="fas fa-shield-alt"></i> Безопасность
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="monitoring-tab" data-bs-toggle="tab" href="#monitoring" role="tab">
+                                <i class="fas fa-eye"></i> Мониторинг
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="backup-tab" data-bs-toggle="tab" href="#backup" role="tab">
+                                <i class="fas fa-archive"></i> Резервное копирование
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="settingsTabContent">
+                        <!-- Основные настройки -->
+                        <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                            <div class="settings-section">
+                                <h4><i class="fas fa-cog"></i> Основные настройки сервера</h4>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.server_name.id_for_label }}">{{ form.server_name.label }}</label>
+                                    {{ form.server_name }}
+                                    {% if form.server_name.errors %}
+                                        <div class="text-danger">{{ form.server_name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.server_description.id_for_label }}">{{ form.server_description.label }}</label>
+                                    {{ form.server_description }}
+                                    {% if form.server_description.errors %}
+                                        <div class="text-danger">{{ form.server_description.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.log_level.id_for_label }}">{{ form.log_level.label }}</label>
+                                    {{ form.log_level }}
+                                    {% if form.log_level.errors %}
+                                        <div class="text-danger">{{ form.log_level.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Настройки производительности -->
+                        <div class="tab-pane fade" id="performance" role="tabpanel">
+                            <div class="settings-section">
+                                <h4><i class="fas fa-tachometer-alt"></i> Настройки производительности</h4>
+                                
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.max_concurrent_requests.id_for_label }}">{{ form.max_concurrent_requests.label }}</label>
+                                            {{ form.max_concurrent_requests }}
+                                            {% if form.max_concurrent_requests.errors %}
+                                                <div class="text-danger">{{ form.max_concurrent_requests.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.request_timeout.id_for_label }}">{{ form.request_timeout.label }}</label>
+                                            {{ form.request_timeout }}
+                                            {% if form.request_timeout.errors %}
+                                                <div class="text-danger">{{ form.request_timeout.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.max_memory_usage.id_for_label }}">{{ form.max_memory_usage.label }}</label>
+                                            {{ form.max_memory_usage }}
+                                            {% if form.max_memory_usage.errors %}
+                                                <div class="text-danger">{{ form.max_memory_usage.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Настройки логирования -->
+                        <div class="tab-pane fade" id="logging" role="tabpanel">
+                            <div class="settings-section">
+                                <h4><i class="fas fa-file-alt"></i> Настройки логирования</h4>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.log_retention_days.id_for_label }}">{{ form.log_retention_days.label }}</label>
+                                            {{ form.log_retention_days }}
+                                            {% if form.log_retention_days.errors %}
+                                                <div class="text-danger">{{ form.log_retention_days.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                {{ form.enable_access_log }}
+                                                <label class="form-check-label" for="{{ form.enable_access_log.id_for_label }}">
+                                                    {{ form.enable_access_log.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Настройки кэширования -->
+                        <div class="tab-pane fade" id="cache" role="tabpanel">
+                            <div class="settings-section">
+                                <h4><i class="fas fa-database"></i> Настройки кэширования</h4>
+                                
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        {{ form.enable_cache }}
+                                        <label class="form-check-label" for="{{ form.enable_cache.id_for_label }}">
+                                            {{ form.enable_cache.label }}
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.cache_timeout.id_for_label }}">{{ form.cache_timeout.label }}</label>
+                                            {{ form.cache_timeout }}
+                                            {% if form.cache_timeout.errors %}
+                                                <div class="text-danger">{{ form.cache_timeout.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.max_cache_size.id_for_label }}">{{ form.max_cache_size.label }}</label>
+                                            {{ form.max_cache_size }}
+                                            {% if form.max_cache_size.errors %}
+                                                <div class="text-danger">{{ form.max_cache_size.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Настройки безопасности -->
+                        <div class="tab-pane fade" id="security" role="tabpanel">
+                            <div class="settings-section">
+                                <h4><i class="fas fa-shield-alt"></i> Настройки безопасности</h4>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                {{ form.enable_rate_limiting }}
+                                                <label class="form-check-label" for="{{ form.enable_rate_limiting.id_for_label }}">
+                                                    {{ form.enable_rate_limiting.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="{{ form.rate_limit_per_minute.id_for_label }}">{{ form.rate_limit_per_minute.label }}</label>
+                                            {{ form.rate_limit_per_minute }}
+                                            {% if form.rate_limit_per_minute.errors %}
+                                                <div class="text-danger">{{ form.rate_limit_per_minute.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                {{ form.enable_csrf_protection }}
+                                                <label class="form-check-label" for="{{ form.enable_csrf_protection.id_for_label }}">
+                                                    {{ form.enable_csrf_protection.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                {{ form.session_cookie_secure }}
+                                                <label class="form-check-label" for="{{ form.session_cookie_secure.id_for_label }}">
+                                                    {{ form.session_cookie_secure.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Настройки мониторинга -->
+                        <div class="tab-pane fade" id="monitoring" role="tabpanel">
+                            <div class="settings-section">
+                                <h4><i class="fas fa-eye"></i> Настройки мониторинга</h4>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                {{ form.enable_health_check }}
+                                                <label class="form-check-label" for="{{ form.enable_health_check.id_for_label }}">
+                                                    {{ form.enable_health_check.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="{{ form.health_check_interval.id_for_label }}">{{ form.health_check_interval.label }}</label>
+                                            {{ form.health_check_interval }}
+                                            {% if form.health_check_interval.errors %}
+                                                <div class="text-danger">{{ form.health_check_interval.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                {{ form.enable_metrics }}
+                                                <label class="form-check-label" for="{{ form.enable_metrics.id_for_label }}">
+                                                    {{ form.enable_metrics.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Настройки резервного копирования -->
+                        <div class="tab-pane fade" id="backup" role="tabpanel">
+                            <div class="settings-section">
+                                <h4><i class="fas fa-archive"></i> Настройки резервного копирования</h4>
+                                
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        {{ form.enable_backup }}
+                                        <label class="form-check-label" for="{{ form.enable_backup.id_for_label }}">
+                                            {{ form.enable_backup.label }}
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.backup_interval_hours.id_for_label }}">{{ form.backup_interval_hours.label }}</label>
+                                            {{ form.backup_interval_hours }}
+                                            {% if form.backup_interval_hours.errors %}
+                                                <div class="text-danger">{{ form.backup_interval_hours.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.backup_retention_days.id_for_label }}">{{ form.backup_retention_days.label }}</label>
+                                            {{ form.backup_retention_days }}
+                                            {% if form.backup_retention_days.errors %}
+                                                <div class="text-danger">{{ form.backup_retention_days.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки действий -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            <button type="submit" class="btn-save">
+                                <i class="fas fa-save"></i> Сохранить настройки сервера
+                            </button>
+                            <a href="{% url 'users:admin_server_settings_reset' %}" class="btn-reset">
+                                <i class="fas fa-undo"></i> Сбросить к умолчанию
+                            </a>
+                        </div>
+                        <div>
+                            <a href="{% url 'users:admin_list' %}" class="btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Назад в админ-панель
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Активация Bootstrap табов
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация табов Bootstrap 5
+        var triggerTabList = [].slice.call(document.querySelectorAll('#settingsTabs a[data-bs-toggle="tab"]'));
+        triggerTabList.forEach(function (triggerEl) {
+            var tabTrigger = new bootstrap.Tab(triggerEl);
+            
+            triggerEl.addEventListener('click', function (event) {
+                event.stopPropagation();
+                tabTrigger.show();
+            });
+        });
+        
+        // Убеждаемся, что первый таб активен при загрузке
+        var firstTab = document.querySelector('#settingsTabs a[data-bs-toggle="tab"]:first-child');
+        if (firstTab) {
+            // Активируем первый таб
+            firstTab.classList.add('active');
+            var firstTabPane = document.querySelector(firstTab.getAttribute('href'));
+            if (firstTabPane) {
+                firstTabPane.classList.add('show', 'active');
+            }
+        }
+    });
+</script>
+{% endblock %}

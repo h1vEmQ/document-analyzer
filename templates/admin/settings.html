@@ -1,0 +1,541 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block title %}Настройки приложения | {{ site_title|default:"WARA" }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; Настройки приложения
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .settings-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .settings-section {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .settings-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        font-size: 18px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .settings-header i {
+        font-size: 20px;
+    }
+    
+    .settings-content {
+        padding: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    }
+    
+    .form-check-input {
+        margin-right: 8px;
+    }
+    
+    .form-check-label {
+        font-weight: normal;
+    }
+    
+    .help-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-block;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: #218838;
+    }
+    
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+    
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+    
+    .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .settings-tabs {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 20px;
+    }
+    
+    .settings-tab {
+        padding: 10px 20px;
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+        border-bottom: none;
+        cursor: pointer;
+        margin-right: 5px;
+        border-radius: 4px 4px 0 0;
+    }
+    
+    .settings-tab.active {
+        background: white;
+        border-bottom: 1px solid white;
+        margin-bottom: -1px;
+    }
+    
+    .settings-tab:hover {
+        background: #e9ecef;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    @media (max-width: 768px) {
+        .settings-container {
+            padding: 10px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .settings-tabs {
+            flex-wrap: wrap;
+        }
+        
+        .settings-tab {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Переключение табов
+    const tabs = document.querySelectorAll('.settings-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            
+            // Убираем активный класс со всех табов и контента
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(tc => tc.classList.remove('active'));
+            
+            // Добавляем активный класс к текущему табу и контенту
+            this.classList.add('active');
+            document.getElementById(targetId).classList.add('active');
+        });
+    });
+    
+    // Автоматическое форматирование размера файла
+    const maxFileSizeInput = document.getElementById('id_max_file_size');
+    if (maxFileSizeInput) {
+        maxFileSizeInput.addEventListener('input', function() {
+            const value = this.value;
+            const helpText = this.nextElementSibling;
+            if (helpText && helpText.classList.contains('help-text')) {
+                const mb = Math.round(value / 1024 / 1024 * 100) / 100;
+                helpText.textContent = `Текущее значение: ${mb} МБ`;
+            }
+        });
+    }
+    
+    // Валидация email при включении уведомлений
+    const emailNotificationsCheckbox = document.getElementById('id_email_notifications_enabled');
+    const notificationEmailInput = document.getElementById('id_notification_email');
+    
+    if (emailNotificationsCheckbox && notificationEmailInput) {
+        emailNotificationsCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                notificationEmailInput.required = true;
+                notificationEmailInput.style.borderColor = '#dc3545';
+            } else {
+                notificationEmailInput.required = false;
+                notificationEmailInput.style.borderColor = '#ddd';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h1 style="margin-bottom: 30px; color: #333; text-align: center;">
+        <i class="fas fa-cog"></i> Настройки приложения
+    </h1>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Статистика -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ settings.app_name }}</div>
+            <div class="stat-label">Название приложения</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ settings.max_file_size|filesizeformat }}</div>
+            <div class="stat-label">Максимальный размер файла</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ settings.analysis_timeout }}с</div>
+            <div class="stat-label">Таймаут анализа</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ settings.session_timeout|floatformat:0 }}с</div>
+            <div class="stat-label">Таймаут сессии</div>
+        </div>
+    </div>
+    
+    <!-- Форма настроек -->
+    <form method="post" class="settings-form">
+        {% csrf_token %}
+        
+        <!-- Табы -->
+        <div class="settings-tabs">
+            <div class="settings-tab active" data-target="basic-settings">
+                <i class="fas fa-info-circle"></i> Основные
+            </div>
+            <div class="settings-tab" data-target="document-settings">
+                <i class="fas fa-file-alt"></i> Документы
+            </div>
+            <div class="settings-tab" data-target="analysis-settings">
+                <i class="fas fa-search"></i> Анализ
+            </div>
+            <div class="settings-tab" data-target="report-settings">
+                <i class="fas fa-chart-bar"></i> Отчеты
+            </div>
+            <div class="settings-tab" data-target="notification-settings">
+                <i class="fas fa-bell"></i> Уведомления
+            </div>
+            <div class="settings-tab" data-target="security-settings">
+                <i class="fas fa-shield-alt"></i> Безопасность
+            </div>
+        </div>
+        
+        <!-- Основные настройки -->
+        <div id="basic-settings" class="tab-content active">
+            <div class="settings-section">
+                <div class="settings-header">
+                    <i class="fas fa-info-circle"></i>
+                    Основные настройки приложения
+                </div>
+                <div class="settings-content">
+                    <div class="form-group">
+                        <label for="app_name">Название приложения</label>
+                        <input type="text" name="app_name" id="app_name" class="form-control" 
+                               value="{{ settings.app_name }}" required>
+                        <div class="help-text">Название, которое отображается в интерфейсе</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="app_description">Описание приложения</label>
+                        <textarea name="app_description" id="app_description" class="form-control" rows="3">{{ settings.app_description }}</textarea>
+                        <div class="help-text">Краткое описание функциональности системы</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Настройки документов -->
+        <div id="document-settings" class="tab-content">
+            <div class="settings-section">
+                <div class="settings-header">
+                    <i class="fas fa-file-alt"></i>
+                    Настройки документов
+                </div>
+                <div class="settings-content">
+                    <div class="form-group">
+                        <label for="max_file_size">Максимальный размер файла (байты)</label>
+                        <input type="number" name="max_file_size" id="max_file_size" class="form-control" 
+                               value="{{ settings.max_file_size }}" min="1024" step="1024">
+                        <div class="help-text">Максимальный размер загружаемого файла в байтах</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="allowed_file_types">Разрешенные типы файлов</label>
+                        <input type="text" name="allowed_file_types" id="allowed_file_types" class="form-control" 
+                               value="{{ settings.allowed_file_types }}" placeholder="docx,pdf,txt">
+                        <div class="help-text">Типы файлов через запятую (docx, pdf, txt, rtf, odt)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Настройки анализа -->
+        <div id="analysis-settings" class="tab-content">
+            <div class="settings-section">
+                <div class="settings-header">
+                    <i class="fas fa-search"></i>
+                    Настройки анализа
+                </div>
+                <div class="settings-content">
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" name="auto_analysis_enabled" id="auto_analysis_enabled" class="form-check-input" 
+                                   {% if settings.auto_analysis_enabled %}checked{% endif %}>
+                            <label for="auto_analysis_enabled" class="form-check-label">
+                                Включить автоматический анализ документов
+                            </label>
+                        </div>
+                        <div class="help-text">Автоматически анализировать загруженные документы</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="analysis_timeout">Таймаут анализа (секунды)</label>
+                        <input type="number" name="analysis_timeout" id="analysis_timeout" class="form-control" 
+                               value="{{ settings.analysis_timeout }}" min="1" max="3600">
+                        <div class="help-text">Максимальное время выполнения анализа (1-3600 секунд)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Настройки отчетов -->
+        <div id="report-settings" class="tab-content">
+            <div class="settings-section">
+                <div class="settings-header">
+                    <i class="fas fa-chart-bar"></i>
+                    Настройки отчетов
+                </div>
+                <div class="settings-content">
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" name="auto_reports_enabled" id="auto_reports_enabled" class="form-check-input" 
+                                   {% if settings.auto_reports_enabled %}checked{% endif %}>
+                            <label for="auto_reports_enabled" class="form-check-label">
+                                Включить автоматическую генерацию отчетов
+                            </label>
+                        </div>
+                        <div class="help-text">Автоматически генерировать отчеты после анализа</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="default_report_format">Формат отчета по умолчанию</label>
+                        <select name="default_report_format" id="default_report_format" class="form-control">
+                            <option value="pdf" {% if settings.default_report_format == 'pdf' %}selected{% endif %}>PDF</option>
+                            <option value="docx" {% if settings.default_report_format == 'docx' %}selected{% endif %}>DOCX</option>
+                        </select>
+                        <div class="help-text">Формат генерируемых отчетов</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Настройки уведомлений -->
+        <div id="notification-settings" class="tab-content">
+            <div class="settings-section">
+                <div class="settings-header">
+                    <i class="fas fa-bell"></i>
+                    Настройки уведомлений
+                </div>
+                <div class="settings-content">
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" name="email_notifications_enabled" id="email_notifications_enabled" class="form-check-input" 
+                                   {% if settings.email_notifications_enabled %}checked{% endif %}>
+                            <label for="email_notifications_enabled" class="form-check-label">
+                                Включить email уведомления
+                            </label>
+                        </div>
+                        <div class="help-text">Отправлять уведомления на email о завершении анализа</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notification_email">Email для уведомлений</label>
+                        <input type="email" name="notification_email" id="notification_email" class="form-control" 
+                               value="{{ settings.notification_email }}" placeholder="admin@example.com">
+                        <div class="help-text">Email адрес для получения уведомлений</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Настройки безопасности -->
+        <div id="security-settings" class="tab-content">
+            <div class="settings-section">
+                <div class="settings-header">
+                    <i class="fas fa-shield-alt"></i>
+                    Настройки безопасности
+                </div>
+                <div class="settings-content">
+                    <div class="form-group">
+                        <label for="session_timeout">Таймаут сессии (секунды)</label>
+                        <input type="number" name="session_timeout" id="session_timeout" class="form-control" 
+                               value="{{ settings.session_timeout }}" min="300" max="86400">
+                        <div class="help-text">Время жизни пользовательской сессии (300-86400 секунд)</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="max_login_attempts">Максимальное количество попыток входа</label>
+                        <input type="number" name="max_login_attempts" id="max_login_attempts" class="form-control" 
+                               value="{{ settings.max_login_attempts }}" min="1" max="10">
+                        <div class="help-text">Количество неудачных попыток входа перед блокировкой (1-10)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Кнопки действий -->
+        <div class="settings-section">
+            <div class="settings-content">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Сохранить настройки
+                </button>
+                
+                <button type="button" class="btn btn-secondary" onclick="resetToDefaults()">
+                    <i class="fas fa-undo"></i> Сбросить к умолчанию
+                </button>
+                
+                <a href="{% url 'admin:index' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Вернуться в админ-панель
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function resetToDefaults() {
+    if (confirm('Вы уверены, что хотите сбросить все настройки к значениям по умолчанию?')) {
+        // Сброс значений формы
+        document.getElementById('app_name').value = 'WARA';
+        document.getElementById('app_description').value = 'Система анализа документов';
+        document.getElementById('max_file_size').value = '10485760';
+        document.getElementById('allowed_file_types').value = 'docx,pdf';
+        document.getElementById('auto_analysis_enabled').checked = true;
+        document.getElementById('analysis_timeout').value = '300';
+        document.getElementById('auto_reports_enabled').checked = true;
+        document.getElementById('default_report_format').value = 'pdf';
+        document.getElementById('email_notifications_enabled').checked = false;
+        document.getElementById('notification_email').value = '';
+        document.getElementById('session_timeout').value = '3600';
+        document.getElementById('max_login_attempts').value = '5';
+        
+        // Переключение на первую вкладку
+        document.querySelector('.settings-tab[data-target="basic-settings"]').click();
+    }
+}
+</script>
+{% endblock %}
