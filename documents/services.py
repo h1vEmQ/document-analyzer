@@ -56,12 +56,22 @@ class DocumentParserService:
                 'structure': self._analyze_structure(docx_doc)
             }
             
+            # Сохраняем извлеченный текст в модель
+            document.content_text = content_data['text_content']
+            document.save(update_fields=['content_text'])
+            
             logger.info(f"Документ {document.title} успешно обработан")
-            return content_data
+            return {
+                "success": True,
+                "content_data": content_data
+            }
             
         except Exception as e:
             logger.error(f"Ошибка при парсинге документа {document.title}: {str(e)}")
-            raise ValidationError(f"Ошибка при обработке документа: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Ошибка при обработке документа: {str(e)}"
+            }
     
     def _extract_text(self, doc: DocumentType) -> str:
         """
