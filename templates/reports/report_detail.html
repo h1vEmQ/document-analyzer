@@ -27,6 +27,9 @@
             </div>
             <div class="btn-group" role="group">
                 {% if report.file %}
+                    <a href="{% url 'reports:view' report.pk %}" class="btn btn-primary" target="_blank">
+                        👁️ Просмотреть отчет
+                    </a>
                     <a href="{% url 'reports:download' report.pk %}" class="btn btn-success">
                         📥 Скачать отчет
                     </a>

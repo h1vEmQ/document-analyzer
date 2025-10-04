@@ -12,6 +12,7 @@ import os
 import json
 from .models import Report, ReportTemplate
 from .services import PDFReportGeneratorService, EmailReportService, ReportTemplateService
+from .html_converter_service import HTMLReportConverterService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -146,6 +147,32 @@ class ReportDownloadView(LoginRequiredMixin, DetailView):
         response['Content-Disposition'] = f'attachment; filename="{report.title}.{report.format}"'
         
         return response
+
+
+class ReportViewView(LoginRequiredMixin, DetailView):
+    """
+    Просмотр отчета в браузере без скачивания
+    """
+    model = Report
+    
+    def get_queryset(self):
+        return Report.objects.filter(user=self.request.user)
+    
+    def get(self, request, *args, **kwargs):
+        report = self.get_object()
+        
+        try:
+            # Конвертируем отчет в HTML
+            html_converter = HTMLReportConverterService()
+            html_content = html_converter.convert_report_to_html(report)
+            
+            # Возвращаем HTML ответ
+            return HttpResponse(html_content, content_type='text/html; charset=utf-8')
+            
+        except Exception as e:
+            logger.error(f"Ошибка при просмотре отчета {report.id}: {e}")
+            messages.error(request, f'Ошибка при просмотре отчета: {str(e)}')
+            return redirect('reports:detail', pk=report.pk)
 
 
 class ReportGenerateView(LoginRequiredMixin, View):

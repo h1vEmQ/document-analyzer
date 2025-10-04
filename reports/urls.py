@@ -6,6 +6,7 @@ app_name = 'reports'
 urlpatterns = [
     path('', views.ReportListView.as_view(), name='list'),
     path('<int:pk>/', views.ReportDetailView.as_view(), name='detail'),
+    path('<int:pk>/view/', views.ReportViewView.as_view(), name='view'),
     path('<int:pk>/download/', views.ReportDownloadView.as_view(), name='download'),
     path('<int:pk>/email/', views.ReportEmailView.as_view(), name='email'),
     path('<int:pk>/delete/', views.ReportDeleteView.as_view(), name='delete'),
