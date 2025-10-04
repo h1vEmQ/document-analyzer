@@ -474,9 +474,16 @@ class DocumentBulkDeleteView(LoginRequiredMixin, View):
             
             # Подсчитываем связанные объекты
             for document in documents:
-                comparisons_count += document.comparisons_as_base.count()
-                comparisons_count += document.comparisons_as_compared.count()
-                reports_count += document.reports.count()
+                # Подсчитываем сравнения, где документ является базовым или сравниваемым
+                base_comparisons = document.base_comparisons.all()
+                compared_comparisons = document.compared_comparisons.all()
+                comparisons_count += base_comparisons.count() + compared_comparisons.count()
+                
+                # Подсчитываем отчеты через сравнения
+                for comparison in base_comparisons:
+                    reports_count += comparison.reports.count()
+                for comparison in compared_comparisons:
+                    reports_count += comparison.reports.count()
             
             # Удаляем документы (каскадное удаление позаботится о связанных объектах)
             documents.delete()
