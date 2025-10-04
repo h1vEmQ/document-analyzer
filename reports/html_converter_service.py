@@ -8,6 +8,9 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils.html import escape
 import re
+import PyPDF2
+from docx import Document
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -198,10 +201,100 @@ class HTMLReportConverterService:
             logger.error(f"Ошибка конвертации отчета {report.id} в HTML: {e}")
             return self._create_error_html(report, str(e))
     
+    def _extract_pdf_content(self, report) -> str:
+        """Извлекает текстовое содержимое из PDF файла"""
+        try:
+            if not report.file or not report.file.path:
+                return "Файл отчета не найден"
+            
+            with open(report.file.path, 'rb') as file:
+                pdf_reader = PyPDF2.PdfReader(file)
+                text_content = ""
+                
+                for page_num, page in enumerate(pdf_reader.pages):
+                    try:
+                        page_text = page.extract_text()
+                        if page_text:
+                            text_content += f"<h3>Страница {page_num + 1}</h3>\n"
+                            text_content += f"<div class='content-text'>{self._format_text_content(page_text)}</div>\n"
+                    except Exception as e:
+                        logger.warning(f"Ошибка извлечения текста со страницы {page_num + 1}: {e}")
+                        text_content += f"<p class='text-muted'>Не удалось извлечь текст со страницы {page_num + 1}</p>\n"
+                
+                return text_content if text_content else "Не удалось извлечь текстовое содержимое из PDF"
+                
+        except Exception as e:
+            logger.error(f"Ошибка извлечения содержимого из PDF {report.id}: {e}")
+            return f"Ошибка чтения PDF файла: {str(e)}"
+    
+    def _extract_docx_content(self, report) -> str:
+        """Извлекает текстовое содержимое из DOCX файла"""
+        try:
+            if not report.file or not report.file.path:
+                return "Файл отчета не найден"
+            
+            doc = Document(report.file.path)
+            content = ""
+            
+            for paragraph in doc.paragraphs:
+                if paragraph.text.strip():
+                    content += f"<p class='content-text'>{self._format_text_content(paragraph.text)}</p>\n"
+            
+            # Извлекаем содержимое таблиц
+            for table in doc.tables:
+                content += "<table class='info-table'>\n"
+                for i, row in enumerate(table.rows):
+                    content += "<tr>\n"
+                    for cell in row.cells:
+                        tag = "th" if i == 0 else "td"
+                        content += f"<{tag}>{self._format_text_content(cell.text)}</{tag}>\n"
+                    content += "</tr>\n"
+                content += "</table>\n"
+            
+            return content if content else "Документ не содержит текстового содержимого"
+            
+        except Exception as e:
+            logger.error(f"Ошибка извлечения содержимого из DOCX {report.id}: {e}")
+            return f"Ошибка чтения DOCX файла: {str(e)}"
+    
+    def _format_text_content(self, text: str) -> str:
+        """Форматирует текстовое содержимое для HTML"""
+        if not text:
+            return ""
+        
+        # Очищаем текст от лишних пробелов и символов
+        text = text.strip()
+        
+        # Удаляем повторяющиеся пробелы и переносы строк
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Экранируем HTML
+        text = escape(text)
+        
+        # Разбиваем на абзацы по переносам строк
+        paragraphs = text.split('\n')
+        formatted_paragraphs = []
+        
+        for paragraph in paragraphs:
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+            
+            # Если абзац короткий и в верхнем регистре - делаем заголовком
+            if (len(paragraph) < 80 and 
+                paragraph.isupper() and 
+                any(c.isalpha() for c in paragraph) and
+                not paragraph.endswith('.')):
+                formatted_paragraphs.append(f"<h4 class='subsection-title'>{paragraph}</h4>")
+            else:
+                formatted_paragraphs.append(f"<p class='content-text'>{paragraph}</p>")
+        
+        return '\n'.join(formatted_paragraphs)
+    
     def _convert_pdf_to_html(self, report) -> str:
-        """Конвертирует PDF отчет в HTML (упрощенная версия)"""
-        # Для PDF создаем базовую HTML структуру с информацией об отчете
-        # В реальном проекте здесь можно использовать библиотеки для извлечения текста из PDF
+        """Конвертирует PDF отчет в HTML с полным содержимым"""
+        # Извлекаем содержимое из PDF
+        pdf_content = self._extract_pdf_content(report)
         
         html_content = f"""
         <!DOCTYPE html>
@@ -284,16 +377,13 @@ class HTMLReportConverterService:
                 
                 {self._get_comparison_info_html(report)}
                 
-                <div class="highlight-box">
-                    <strong>Примечание:</strong> Это PDF отчет. Для просмотра полного содержимого используйте кнопку "Скачать отчет".
+                <div class="report-section">
+                    <h2 class="section-title">Содержимое отчета</h2>
+                    {pdf_content}
                 </div>
                 
-                <div class="report-section">
-                    <h2 class="section-title">Действия</h2>
-                    <p>Для просмотра полного содержимого PDF отчета:</p>
-                    <div class="list-item">Нажмите кнопку "Скачать отчет" для сохранения файла</div>
-                    <div class="list-item">Откройте файл в PDF просмотрщике</div>
-                    <div class="list-item">Или используйте встроенный просмотрщик браузера</div>
+                <div class="highlight-box">
+                    <strong>Примечание:</strong> Это PDF отчет, конвертированный в HTML для просмотра в браузере.
                 </div>
             </div>
         </body>
@@ -303,9 +393,9 @@ class HTMLReportConverterService:
         return html_content
     
     def _convert_docx_to_html(self, report) -> str:
-        """Конвертирует DOCX отчет в HTML (упрощенная версия)"""
-        # Для DOCX создаем базовую HTML структуру
-        # В реальном проекте здесь можно использовать python-docx для извлечения содержимого
+        """Конвертирует DOCX отчет в HTML с полным содержимым"""
+        # Извлекаем содержимое из DOCX
+        docx_content = self._extract_docx_content(report)
         
         html_content = f"""
         <!DOCTYPE html>
@@ -388,16 +478,13 @@ class HTMLReportConverterService:
                 
                 {self._get_comparison_info_html(report)}
                 
-                <div class="highlight-box">
-                    <strong>Примечание:</strong> Это DOCX отчет. Для просмотра полного содержимого используйте кнопку "Скачать отчет".
+                <div class="report-section">
+                    <h2 class="section-title">Содержимое отчета</h2>
+                    {docx_content}
                 </div>
                 
-                <div class="report-section">
-                    <h2 class="section-title">Действия</h2>
-                    <p>Для просмотра полного содержимого DOCX отчета:</p>
-                    <div class="list-item">Нажмите кнопку "Скачать отчет" для сохранения файла</div>
-                    <div class="list-item">Откройте файл в Microsoft Word или LibreOffice Writer</div>
-                    <div class="list-item">Или используйте онлайн версию Office 365</div>
+                <div class="highlight-box">
+                    <strong>Примечание:</strong> Это DOCX отчет, конвертированный в HTML для просмотра в браузере.
                 </div>
             </div>
         </body>
