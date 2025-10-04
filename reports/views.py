@@ -70,6 +70,42 @@ class ReportDetailView(LoginRequiredMixin, DetailView):
         total_versions = all_versions.count()
         latest_version = root_report.get_latest_version()
         
+        # Получаем данные анализа из связанного сравнения
+        analysis_data = {}
+        if report.comparison:
+            comparison = report.comparison
+            
+            # Основные данные сравнения
+            analysis_data = {
+                'comparison': comparison,
+                'base_document': comparison.base_document,
+                'compared_document': comparison.compared_document,
+                'analysis_type': comparison.analysis_type,
+                'analysis_method': comparison.analysis_method,
+                'status': comparison.status,
+                'created_date': comparison.created_date,
+                'completed_date': comparison.completed_date,
+            }
+            
+            # Результаты анализа
+            if comparison.analysis_result:
+                analysis_data['analysis_result'] = comparison.analysis_result
+                
+                # Извлекаем разделы анализа
+                if isinstance(comparison.analysis_result, dict):
+                    analysis_data['summary'] = comparison.analysis_result.get('summary', '')
+                    analysis_data['similarities'] = comparison.analysis_result.get('similarities', [])
+                    analysis_data['differences'] = comparison.analysis_result.get('differences', [])
+                    analysis_data['recommendations'] = comparison.analysis_result.get('recommendations', [])
+                    analysis_data['overall_assessment'] = comparison.analysis_result.get('overall_assessment', '')
+                    
+                    # Данные для AI-анализа
+                    if comparison.analysis_type == 'ollama':
+                        analysis_data['base_document_sentiment'] = comparison.analysis_result.get('base_document_sentiment', {})
+                        analysis_data['compared_document_sentiment'] = comparison.analysis_result.get('compared_document_sentiment', {})
+                        analysis_data['base_document_key_points'] = comparison.analysis_result.get('base_document_key_points', {})
+                        analysis_data['compared_document_key_points'] = comparison.analysis_result.get('compared_document_key_points', {})
+        
         context.update({
             'root_report': root_report,
             'all_versions': all_versions,
@@ -78,6 +114,7 @@ class ReportDetailView(LoginRequiredMixin, DetailView):
             'current_report': report,
             'is_current_latest': report.is_latest_version,
             'is_root_report': report.parent_report is None,
+            'analysis_data': analysis_data,
         })
         
         return context

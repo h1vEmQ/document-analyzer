@@ -245,9 +245,347 @@
             </div>
         {% endif %}
     </div>
-</div>
+        </div>
 
-<script>
+        {% if analysis_data %}
+            <!-- Разделы анализа документа -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>🔍 Разделы анализа документа</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Навигация по разделам -->
+                    <ul class="nav nav-tabs" id="analysisTabs" role="tablist">
+                        {% if analysis_data.summary %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button" role="tab">
+                                    <i class="fas fa-list-ul"></i> Резюме
+                                </button>
+                            </li>
+                        {% endif %}
+                        {% if analysis_data.similarities %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="similarities-tab" data-bs-toggle="tab" data-bs-target="#similarities" type="button" role="tab">
+                                    <i class="fas fa-equals"></i> Сходства
+                                </button>
+                            </li>
+                        {% endif %}
+                        {% if analysis_data.differences %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="differences-tab" data-bs-toggle="tab" data-bs-target="#differences" type="button" role="tab">
+                                    <i class="fas fa-not-equal"></i> Различия
+                                </button>
+                            </li>
+                        {% endif %}
+                        {% if analysis_data.recommendations %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab" data-bs-target="#recommendations" type="button" role="tab">
+                                    <i class="fas fa-lightbulb"></i> Рекомендации
+                                </button>
+                            </li>
+                        {% endif %}
+                        {% if analysis_data.analysis_type == 'ollama' %}
+                            {% if analysis_data.base_document_sentiment or analysis_data.compared_document_sentiment %}
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="sentiment-tab" data-bs-toggle="tab" data-bs-target="#sentiment" type="button" role="tab">
+                                        <i class="fas fa-heart"></i> Тональность
+                                    </button>
+                                </li>
+                            {% endif %}
+                            {% if analysis_data.base_document_key_points or analysis_data.compared_document_key_points %}
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="keypoints-tab" data-bs-toggle="tab" data-bs-target="#keypoints" type="button" role="tab">
+                                        <i class="fas fa-key"></i> Ключевые моменты
+                                    </button>
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                        {% if analysis_data.overall_assessment %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="assessment-tab" data-bs-toggle="tab" data-bs-target="#assessment" type="button" role="tab">
+                                    <i class="fas fa-star"></i> Общая оценка
+                                </button>
+                            </li>
+                        {% endif %}
+                    </ul>
+
+                    <!-- Содержимое разделов -->
+                    <div class="tab-content" id="analysisTabsContent">
+                        {% if analysis_data.summary %}
+                            <div class="tab-pane fade show active" id="summary" role="tabpanel">
+                                <div class="mt-3">
+                                    <h6><i class="fas fa-list-ul text-primary"></i> Краткое резюме анализа</h6>
+                                    <div class="alert alert-info">
+                                        {{ analysis_data.summary }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if analysis_data.similarities %}
+                            <div class="tab-pane fade" id="similarities" role="tabpanel">
+                                <div class="mt-3">
+                                    <h6><i class="fas fa-equals text-success"></i> Сходства между документами</h6>
+                                    <ul class="list-group">
+                                        {% for similarity in analysis_data.similarities %}
+                                            <li class="list-group-item">
+                                                <i class="fas fa-check text-success"></i> {{ similarity }}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if analysis_data.differences %}
+                            <div class="tab-pane fade" id="differences" role="tabpanel">
+                                <div class="mt-3">
+                                    <h6><i class="fas fa-not-equal text-warning"></i> Различия между документами</h6>
+                                    <div class="accordion" id="differencesAccordion">
+                                        {% for difference in analysis_data.differences %}
+                                            {% if difference.type %}
+                                                <div class="accordion-item">
+                                                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}">
+                                                            <span class="badge bg-warning me-2">{{ difference.type|title }}</span>
+                                                            {{ difference.description|truncatechars:50 }}
+                                                        </button>
+                                                    </h2>
+                                                    <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#differencesAccordion">
+                                                        <div class="accordion-body">
+                                                            <p><strong>Описание:</strong> {{ difference.description }}</p>
+                                                            {% if difference.location %}
+                                                                <p><strong>Местоположение:</strong> {{ difference.location }}</p>
+                                                            {% endif %}
+                                                            {% if difference.old_value %}
+                                                                <p><strong>Старое значение:</strong> {{ difference.old_value }}</p>
+                                                            {% endif %}
+                                                            {% if difference.new_value %}
+                                                                <p><strong>Новое значение:</strong> {{ difference.new_value }}</p>
+                                                            {% endif %}
+                                                            {% if difference.significance %}
+                                                                <p><strong>Значимость:</strong> 
+                                                                    <span class="badge 
+                                                                        {% if difference.significance == 'high' %}bg-danger
+                                                                        {% elif difference.significance == 'medium' %}bg-warning
+                                                                        {% else %}bg-secondary{% endif %}">
+                                                                        {{ difference.significance|title }}
+                                                                    </span>
+                                                                </p>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle"></i> {{ difference }}
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if analysis_data.recommendations %}
+                            <div class="tab-pane fade" id="recommendations" role="tabpanel">
+                                <div class="mt-3">
+                                    <h6><i class="fas fa-lightbulb text-info"></i> Рекомендации</h6>
+                                    <div class="row">
+                                        {% for recommendation in analysis_data.recommendations %}
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-info">
+                                                    <div class="card-body">
+                                                        <i class="fas fa-lightbulb text-info"></i> {{ recommendation }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if analysis_data.analysis_type == 'ollama' %}
+                            {% if analysis_data.base_document_sentiment or analysis_data.compared_document_sentiment %}
+                                <div class="tab-pane fade" id="sentiment" role="tabpanel">
+                                    <div class="mt-3">
+                                        <h6><i class="fas fa-heart text-danger"></i> Анализ тональности</h6>
+                                        
+                                        {% if analysis_data.base_document_sentiment %}
+                                            <div class="mb-4">
+                                                <h6 class="text-primary">{{ analysis_data.base_document.title }} (v{{ analysis_data.base_document.version }})</h6>
+                                                {% if analysis_data.base_document_sentiment.sentiment %}
+                                                    <p><strong>Тональность:</strong> 
+                                                        <span class="badge 
+                                                            {% if analysis_data.base_document_sentiment.sentiment == 'positive' %}bg-success
+                                                            {% elif analysis_data.base_document_sentiment.sentiment == 'negative' %}bg-danger
+                                                            {% else %}bg-secondary{% endif %}">
+                                                            {{ analysis_data.base_document_sentiment.sentiment|title }}
+                                                        </span>
+                                                    </p>
+                                                {% endif %}
+                                                {% if analysis_data.base_document_sentiment.confidence %}
+                                                    <p><strong>Уверенность:</strong> {{ analysis_data.base_document_sentiment.confidence|floatformat:2 }}</p>
+                                                {% endif %}
+                                                {% if analysis_data.base_document_sentiment.emotions %}
+                                                    <p><strong>Эмоции:</strong> 
+                                                        {% for emotion in analysis_data.base_document_sentiment.emotions %}
+                                                            <span class="badge bg-info me-1">{{ emotion }}</span>
+                                                        {% endfor %}
+                                                    </p>
+                                                {% endif %}
+                                                {% if analysis_data.base_document_sentiment.summary %}
+                                                    <div class="alert alert-light">
+                                                        {{ analysis_data.base_document_sentiment.summary }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+
+                                        {% if analysis_data.compared_document_sentiment %}
+                                            <div class="mb-4">
+                                                <h6 class="text-primary">{{ analysis_data.compared_document.title }} (v{{ analysis_data.compared_document.version }})</h6>
+                                                {% if analysis_data.compared_document_sentiment.sentiment %}
+                                                    <p><strong>Тональность:</strong> 
+                                                        <span class="badge 
+                                                            {% if analysis_data.compared_document_sentiment.sentiment == 'positive' %}bg-success
+                                                            {% elif analysis_data.compared_document_sentiment.sentiment == 'negative' %}bg-danger
+                                                            {% else %}bg-secondary{% endif %}">
+                                                            {{ analysis_data.compared_document_sentiment.sentiment|title }}
+                                                        </span>
+                                                    </p>
+                                                {% endif %}
+                                                {% if analysis_data.compared_document_sentiment.confidence %}
+                                                    <p><strong>Уверенность:</strong> {{ analysis_data.compared_document_sentiment.confidence|floatformat:2 }}</p>
+                                                {% endif %}
+                                                {% if analysis_data.compared_document_sentiment.emotions %}
+                                                    <p><strong>Эмоции:</strong> 
+                                                        {% for emotion in analysis_data.compared_document_sentiment.emotions %}
+                                                            <span class="badge bg-info me-1">{{ emotion }}</span>
+                                                        {% endfor %}
+                                                    </p>
+                                                {% endif %}
+                                                {% if analysis_data.compared_document_sentiment.summary %}
+                                                    <div class="alert alert-light">
+                                                        {{ analysis_data.compared_document_sentiment.summary }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if analysis_data.base_document_key_points or analysis_data.compared_document_key_points %}
+                                <div class="tab-pane fade" id="keypoints" role="tabpanel">
+                                    <div class="mt-3">
+                                        <h6><i class="fas fa-key text-warning"></i> Ключевые моменты</h6>
+                                        
+                                        {% if analysis_data.base_document_key_points %}
+                                            <div class="mb-4">
+                                                <h6 class="text-primary">{{ analysis_data.base_document.title }} (v{{ analysis_data.base_document.version }})</h6>
+                                                {% if analysis_data.base_document_key_points.key_points %}
+                                                    <div class="row">
+                                                        {% for point in analysis_data.base_document_key_points.key_points %}
+                                                            <div class="col-md-6 mb-3">
+                                                                <div class="card border-warning">
+                                                                    <div class="card-body">
+                                                                        <h6 class="card-title">
+                                                                            <span class="badge 
+                                                                                {% if point.importance == 'high' %}bg-danger
+                                                                                {% elif point.importance == 'medium' %}bg-warning
+                                                                                {% else %}bg-secondary{% endif %}">
+                                                                                {{ point.importance|title }}
+                                                                            </span>
+                                                                            {% if point.category %}
+                                                                                <span class="badge bg-info">{{ point.category }}</span>
+                                                                            {% endif %}
+                                                                        </h6>
+                                                                        <p class="card-text">{{ point.point }}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                                {% if analysis_data.base_document_key_points.summary %}
+                                                    <div class="alert alert-light">
+                                                        <strong>Резюме:</strong> {{ analysis_data.base_document_key_points.summary }}
+                                                    </div>
+                                                {% endif %}
+                                                {% if analysis_data.base_document_key_points.main_topics %}
+                                                    <p><strong>Основные темы:</strong> 
+                                                        {% for topic in analysis_data.base_document_key_points.main_topics %}
+                                                            <span class="badge bg-primary me-1">{{ topic }}</span>
+                                                        {% endfor %}
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+
+                                        {% if analysis_data.compared_document_key_points %}
+                                            <div class="mb-4">
+                                                <h6 class="text-primary">{{ analysis_data.compared_document.title }} (v{{ analysis_data.compared_document.version }})</h6>
+                                                {% if analysis_data.compared_document_key_points.key_points %}
+                                                    <div class="row">
+                                                        {% for point in analysis_data.compared_document_key_points.key_points %}
+                                                            <div class="col-md-6 mb-3">
+                                                                <div class="card border-warning">
+                                                                    <div class="card-body">
+                                                                        <h6 class="card-title">
+                                                                            <span class="badge 
+                                                                                {% if point.importance == 'high' %}bg-danger
+                                                                                {% elif point.importance == 'medium' %}bg-warning
+                                                                                {% else %}bg-secondary{% endif %}">
+                                                                                {{ point.importance|title }}
+                                                                            </span>
+                                                                            {% if point.category %}
+                                                                                <span class="badge bg-info">{{ point.category }}</span>
+                                                                            {% endif %}
+                                                                        </h6>
+                                                                        <p class="card-text">{{ point.point }}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                                {% if analysis_data.compared_document_key_points.summary %}
+                                                    <div class="alert alert-light">
+                                                        <strong>Резюме:</strong> {{ analysis_data.compared_document_key_points.summary }}
+                                                    </div>
+                                                {% endif %}
+                                                {% if analysis_data.compared_document_key_points.main_topics %}
+                                                    <p><strong>Основные темы:</strong> 
+                                                        {% for topic in analysis_data.compared_document_key_points.main_topics %}
+                                                            <span class="badge bg-primary me-1">{{ topic }}</span>
+                                                        {% endfor %}
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if analysis_data.overall_assessment %}
+                            <div class="tab-pane fade" id="assessment" role="tabpanel">
+                                <div class="mt-3">
+                                    <h6><i class="fas fa-star text-warning"></i> Общая оценка изменений</h6>
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-star"></i> {{ analysis_data.overall_assessment }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <script>
 function changeReportVersion(versionId) {
     if (versionId) {
         // Перенаправляем на детальную страницу выбранной версии
