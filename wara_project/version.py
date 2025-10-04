@@ -9,16 +9,16 @@ __version__ = "1.0.0"
 __year__ = "2025"
 
 # Название приложения
-__app_name__ = "Report analyzer"
+__app_name__ = "Document analyzer"
 
 # Полное название
-__app_full_name__ = "Report analyzer"
+__app_full_name__ = "Document analyzer"
 
 # Описание
 __description__ = "Система анализа документов"
 
 # Автор
-__author__ = "Report analyzer Development Team"
+__author__ = "Document analyzer Development Team"
 
 # Copyright
 __copyright__ = f"Copyright (c) {__year__} {__author__}"
@@ -28,7 +28,7 @@ __metadata__ = {
     'name': __app_name__,
     'version': __version__,
     'author': __author__,
-    'author_email': 'contact@report-analyzer.com',
+    'author_email': 'contact@document-analyzer.com',
     'description': __description__,
     'year': __year__,
     'copyright': __copyright__,

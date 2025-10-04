@@ -1,7 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load i18n admin_urls static admin_modify %}
 
-{% block title %}Настройки сервера | {{ site_title|default:"Report analyzer" }}{% endblock %}
+{% block title %}Настройки сервера | {{ site_title|default:"Document analyzer" }}{% endblock %}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
@@ -673,8 +673,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function resetToDefaults() {
     if (confirm('Вы уверены, что хотите сбросить все настройки сервера к значениям по умолчанию?')) {
         // Сброс значений формы
-        document.getElementById('id_server_name').value = 'Report analyzer Server';
-        document.getElementById('id_server_description').value = 'Сервер системы анализа документов Report analyzer';
+        document.getElementById('id_server_name').value = 'Document analyzer Server';
+        document.getElementById('id_server_description').value = 'Сервер системы анализа документов Document analyzer';
         document.getElementById('id_max_concurrent_requests').value = '100';
         document.getElementById('id_request_timeout').value = '30';
         document.getElementById('id_max_memory_usage').value = '2048';

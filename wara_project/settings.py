@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Report analyzer приложения
+    # Document analyzer приложения
     'documents',
     'analysis', 
     'reports',

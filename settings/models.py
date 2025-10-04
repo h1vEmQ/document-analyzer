@@ -10,7 +10,7 @@ class ApplicationSettings(models.Model):
     # Основные настройки приложения
     app_name = models.CharField(
         max_length=100, 
-        default='Report analyzer',
+        default='Document analyzer',
         verbose_name='Название приложения'
     )
     app_description = models.TextField(
@@ -105,7 +105,7 @@ class ApplicationSettings(models.Model):
         """Получить настройки приложения (создать если не существует)"""
         settings, created = cls.objects.get_or_create(
             defaults={
-                'app_name': 'Report analyzer',
+                'app_name': 'Document analyzer',
                 'app_description': 'Система анализа документов',
             }
         )
@@ -118,12 +118,12 @@ class ServerSettings(models.Model):
     # Основные настройки сервера
     server_name = models.CharField(
         max_length=100,
-        default='Report analyzer Server',
+        default='Document analyzer Server',
         verbose_name='Название сервера'
     )
     
     server_description = models.TextField(
-        default='Сервер системы анализа документов Report analyzer',
+        default='Сервер системы анализа документов Document analyzer',
         verbose_name='Описание сервера'
     )
     
@@ -271,8 +271,8 @@ class ServerSettings(models.Model):
         """Получить настройки сервера (создать если не существует)"""
         settings, created = cls.objects.get_or_create(
             defaults={
-                'server_name': 'Report analyzer Server',
-                'server_description': 'Сервер системы анализа документов Report analyzer',
+                'server_name': 'Document analyzer Server',
+                'server_description': 'Сервер системы анализа документов Document analyzer',
             }
         )
         return settings

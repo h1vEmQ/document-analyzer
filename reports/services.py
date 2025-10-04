@@ -458,7 +458,7 @@ class EmailReportService:
             
             <div class="footer">
                 <p>Подробный отчет прикреплен к письму в формате PDF.</p>
-                <p>Сгенерировано системой Report analyzer ({timezone.now().strftime('%d.%m.%Y %H:%M')})</p>
+                <p>Сгенерировано системой Document analyzer ({timezone.now().strftime('%d.%m.%Y %H:%M')})</p>
             </div>
         </body>
         </html>
@@ -492,7 +492,7 @@ class EmailReportService:
 
 Подробный отчет прикреплен к письму в формате PDF.
 
-Сгенерировано системой Report analyzer ({timezone.now().strftime('%d.%m.%Y %H:%M')})
+Сгенерировано системой Document analyzer ({timezone.now().strftime('%d.%m.%Y %H:%M')})
         """
         
         return text_content

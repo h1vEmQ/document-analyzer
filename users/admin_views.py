@@ -326,7 +326,7 @@ class AdminResetApplicationSettingsView(AdminRequiredMixin, UpdateView):
         settings = self.get_object()
         
         # Сбрасываем настройки к значениям по умолчанию
-        settings.app_name = 'Report analyzer'
+        settings.app_name = 'Document analyzer'
         settings.app_description = 'Система анализа документов'
         settings.max_file_size = 10485760
         settings.allowed_file_types = 'docx,pdf'
@@ -476,8 +476,8 @@ class AdminResetServerSettingsView(AdminRequiredMixin, UpdateView):
         settings = self.get_object()
         
         # Сброс к значениям по умолчанию
-        settings.server_name = 'Report analyzer Server'
-        settings.server_description = 'Сервер системы анализа документов Report analyzer'
+        settings.server_name = 'Document analyzer Server'
+        settings.server_description = 'Сервер системы анализа документов Document analyzer'
         settings.max_concurrent_requests = 100
         settings.request_timeout = 30
         settings.max_memory_usage = 2048
