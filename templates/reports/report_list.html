@@ -21,11 +21,11 @@
                 {% endif %}
             </div>
             <div class="btn-group" role="group">
-                <a href="{% url 'reports:list' %}{% if is_filtered %}?comparison={{ filtered_comparison.id }}{% endif %}&view_mode=card" 
+                <a href="{% url 'reports:list' %}{% if is_filtered %}?comparison={{ filtered_comparison.id }}&view_mode=card{% else %}?view_mode=card{% endif %}" 
                    class="btn btn-outline-secondary {% if view_mode == 'card' %}active{% endif %}">
                     <i class="fas fa-th-large"></i> Карточки
                 </a>
-                <a href="{% url 'reports:list' %}{% if is_filtered %}?comparison={{ filtered_comparison.id }}{% endif %}&view_mode=table" 
+                <a href="{% url 'reports:list' %}{% if is_filtered %}?comparison={{ filtered_comparison.id }}&view_mode=table{% else %}?view_mode=table{% endif %}" 
                    class="btn btn-outline-secondary {% if view_mode == 'table' %}active{% endif %}">
                     <i class="fas fa-table"></i> Таблица
                 </a>

@@ -290,6 +290,8 @@ class OllamaService:
                 
                 if json_start != -1 and json_end > json_start:
                     json_str = response_text[json_start:json_end]
+                    # Очищаем JSON от лишних символов
+                    json_str = json_str.strip()
                     parsed_data = json.loads(json_str)
                     
                     return {
@@ -297,7 +299,9 @@ class OllamaService:
                         "sentiment_result": parsed_data
                     }
                     
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parsing error in sentiment analysis: {e}")
+                logger.error(f"Raw response: {response_text}")
                 pass
         
         return {
@@ -343,6 +347,8 @@ class OllamaService:
                 
                 if json_start != -1 and json_end > json_start:
                     json_str = response_text[json_start:json_end]
+                    # Очищаем JSON от лишних символов
+                    json_str = json_str.strip()
                     parsed_data = json.loads(json_str)
                     
                     return {
@@ -350,7 +356,9 @@ class OllamaService:
                         "key_points_result": parsed_data
                     }
                     
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parsing error in key points extraction: {e}")
+                logger.error(f"Raw response: {response_text}")
                 pass
         
         return {
