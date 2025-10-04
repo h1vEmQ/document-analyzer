@@ -915,8 +915,8 @@ class OllamaReportGeneratorService:
         
         # Информация об анализе
         info_data = [
-            ['Базовый документ:', comparison.base_document.title],
-            ['Сравниваемый документ:', comparison.compared_document.title],
+            ['Базовый документ:', f"{comparison.base_document.title} (v{comparison.base_document.version})"],
+            ['Сравниваемый документ:', f"{comparison.compared_document.title} (v{comparison.compared_document.version})"],
             ['Модель нейросети:', comparison.analysis_method or 'Не указана'],
             ['Дата анализа:', comparison.created_date.strftime('%d.%m.%Y %H:%M')],
             ['Статус:', comparison.get_status_display()]
@@ -1001,7 +1001,7 @@ class OllamaReportGeneratorService:
                 
                 # Тональность базового документа
                 base_sentiment = analysis_data['base_document_sentiment']
-                elements.append(Paragraph(f"Тональность базового документа: {comparison.base_document.title}", 
+                elements.append(Paragraph(f"Тональность базового документа: {comparison.base_document.title} (v{comparison.base_document.version})", 
                                         self.pdf_generator.styles['Heading3']))
                 
                 sentiment_data = [
@@ -1031,7 +1031,7 @@ class OllamaReportGeneratorService:
                 
                 # Тональность сравниваемого документа
                 compared_sentiment = analysis_data['compared_document_sentiment']
-                elements.append(Paragraph(f"Тональность сравниваемого документа: {comparison.compared_document.title}", 
+                elements.append(Paragraph(f"Тональность сравниваемого документа: {comparison.compared_document.title} (v{comparison.compared_document.version})", 
                                         self.pdf_generator.styles['Heading3']))
                 
                 sentiment_data2 = [
@@ -1067,7 +1067,7 @@ class OllamaReportGeneratorService:
                 
                 # Ключевые моменты базового документа
                 base_key_points = analysis_data['base_document_key_points']
-                elements.append(Paragraph(f"Ключевые моменты: {comparison.base_document.title}", 
+                elements.append(Paragraph(f"Ключевые моменты: {comparison.base_document.title} (v{comparison.base_document.version})", 
                                         self.pdf_generator.styles['Heading3']))
                 
                 if base_key_points.get('key_points'):
@@ -1091,7 +1091,7 @@ class OllamaReportGeneratorService:
                 
                 # Ключевые моменты сравниваемого документа
                 compared_key_points = analysis_data['compared_document_key_points']
-                elements.append(Paragraph(f"Ключевые моменты: {comparison.compared_document.title}", 
+                elements.append(Paragraph(f"Ключевые моменты: {comparison.compared_document.title} (v{comparison.compared_document.version})", 
                                         self.pdf_generator.styles['Heading3']))
                 
                 if compared_key_points.get('key_points'):
@@ -1147,8 +1147,8 @@ class OllamaReportGeneratorService:
         info_table.style = 'Table Grid'
         
         info_data = [
-            ('Базовый документ:', comparison.base_document.title),
-            ('Сравниваемый документ:', comparison.compared_document.title),
+            ('Базовый документ:', f"{comparison.base_document.title} (v{comparison.base_document.version})"),
+            ('Сравниваемый документ:', f"{comparison.compared_document.title} (v{comparison.compared_document.version})"),
             ('Модель нейросети:', comparison.analysis_method or 'Не указана'),
             ('Дата анализа:', comparison.created_date.strftime('%d.%m.%Y %H:%M')),
             ('Статус:', comparison.get_status_display())
@@ -1205,7 +1205,7 @@ class OllamaReportGeneratorService:
                 
                 # Тональность базового документа
                 base_sentiment = analysis_data['base_document_sentiment']
-                doc.add_heading(f'Тональность: {comparison.base_document.title}', level=2)
+                doc.add_heading(f'Тональность: {comparison.base_document.title} (v{comparison.base_document.version})', level=2)
                 
                 sentiment_table = doc.add_table(rows=4, cols=2)
                 sentiment_table.style = 'Table Grid'
@@ -1225,7 +1225,7 @@ class OllamaReportGeneratorService:
                 
                 # Тональность сравниваемого документа
                 compared_sentiment = analysis_data['compared_document_sentiment']
-                doc.add_heading(f'Тональность: {comparison.compared_document.title}', level=2)
+                doc.add_heading(f'Тональность: {comparison.compared_document.title} (v{comparison.compared_document.version})', level=2)
                 
                 sentiment_table2 = doc.add_table(rows=4, cols=2)
                 sentiment_table2.style = 'Table Grid'
@@ -1250,7 +1250,7 @@ class OllamaReportGeneratorService:
                 
                 # Ключевые моменты базового документа
                 base_key_points = analysis_data['base_document_key_points']
-                doc.add_heading(f'Ключевые моменты: {comparison.base_document.title}', level=2)
+                doc.add_heading(f'Ключевые моменты: {comparison.base_document.title} (v{comparison.base_document.version})', level=2)
                 
                 if base_key_points.get('key_points'):
                     for point in base_key_points['key_points']:
@@ -1260,7 +1260,7 @@ class OllamaReportGeneratorService:
                 
                 # Ключевые моменты сравниваемого документа
                 compared_key_points = analysis_data['compared_document_key_points']
-                doc.add_heading(f'Ключевые моменты: {comparison.compared_document.title}', level=2)
+                doc.add_heading(f'Ключевые моменты: {comparison.compared_document.title} (v{comparison.compared_document.version})', level=2)
                 
                 if compared_key_points.get('key_points'):
                     for point in compared_key_points['key_points']:
