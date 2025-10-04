@@ -1310,11 +1310,15 @@ class OllamaReportGeneratorService:
         # Определяем расширение файла
         file_extension = 'pdf' if format.lower() == 'pdf' else 'docx'
         
-        # Создаем объект отчета
+        # Создаем объект отчета с версиями документов в заголовке
+        base_doc = comparison.base_document
+        compared_doc = comparison.compared_document
+        title = f"Отчет анализа нейросетью: {base_doc.title} (v{base_doc.version}) vs {compared_doc.title} (v{compared_doc.version})"
+        
         report = Report.objects.create(
             user=comparison.user,
             comparison=comparison,
-            title=f"Отчет анализа нейросетью: {comparison.title}",
+            title=title,
             format=format,
             file=None,  # Будет установлено через ContentFile
             template_used='ollama_ai_analysis',
