@@ -332,6 +332,7 @@ class AdminResetApplicationSettingsView(AdminRequiredMixin, UpdateView):
         settings.allowed_file_types = 'docx,pdf'
         settings.auto_analysis_enabled = True
         settings.analysis_timeout = 300
+        settings.items_per_page = 10
         settings.auto_reports_enabled = True
         settings.default_report_format = 'pdf'
         settings.email_notifications_enabled = True

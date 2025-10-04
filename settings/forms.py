@@ -17,6 +17,7 @@ class ApplicationSettingsForm(forms.ModelForm):
             'analysis_timeout',
             'auto_reports_enabled',
             'default_report_format',
+            'items_per_page',
             'email_notifications_enabled',
             'notification_email',
             'session_timeout',
@@ -48,6 +49,11 @@ class ApplicationSettingsForm(forms.ModelForm):
             }),
             'default_report_format': forms.Select(attrs={
                 'class': 'form-control'
+            }),
+            'items_per_page': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '5',
+                'max': '100'
             }),
             'notification_email': forms.EmailInput(attrs={
                 'class': 'form-control',
@@ -112,6 +118,15 @@ class ApplicationSettingsForm(forms.ModelForm):
         if timeout > 3600:
             raise ValidationError('Таймаут анализа не должен превышать 1 час')
         return timeout
+    
+    def clean_items_per_page(self):
+        """Валидация количества элементов на странице"""
+        items = self.cleaned_data['items_per_page']
+        if items < 5:
+            raise ValidationError('Количество элементов на странице должно быть не менее 5')
+        if items > 100:
+            raise ValidationError('Количество элементов на странице не должно превышать 100')
+        return items
     
     def clean_session_timeout(self):
         """Валидация таймаута сессии"""

@@ -25,10 +25,15 @@ class ComparisonListView(LoginRequiredMixin, ListView):
     model = Comparison
     template_name = 'analysis/comparison_list.html'
     context_object_name = 'comparisons'
-    paginate_by = 20
     
     def get_queryset(self):
         return Comparison.objects.filter(user=self.request.user).order_by('-created_date')
+    
+    def get_paginate_by(self, queryset):
+        """Получить количество элементов на странице из настроек приложения"""
+        from settings.models import ApplicationSettings
+        settings = ApplicationSettings.get_settings()
+        return settings.items_per_page
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -50,6 +50,12 @@ class ApplicationSettings(models.Model):
         verbose_name='Формат отчета по умолчанию'
     )
     
+    # Настройки интерфейса
+    items_per_page = models.PositiveIntegerField(
+        default=10,
+        verbose_name='Количество элементов на странице'
+    )
+    
     # Настройки уведомлений
     email_notifications_enabled = models.BooleanField(
         default=False,
@@ -107,6 +113,7 @@ class ApplicationSettings(models.Model):
             defaults={
                 'app_name': 'Document analyzer',
                 'app_description': 'Система анализа документов',
+                'items_per_page': 10,
             }
         )
         return settings

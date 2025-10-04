@@ -227,6 +227,23 @@
                         </div>
                     </div>
 
+                    <!-- Настройки интерфейса -->
+                    <div class="settings-card">
+                        <h4><i class="fas fa-desktop"></i> Настройки интерфейса</h4>
+                        <div class="form-section">
+                            <div class="mb-3">
+                                <label for="{{ form.items_per_page.id_for_label }}" class="form-label">{{ form.items_per_page.label }}</label>
+                                {{ form.items_per_page }}
+                                {% if form.items_per_page.help_text %}
+                                    <div class="form-text">{{ form.items_per_page.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.items_per_page.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Настройки уведомлений -->
                     <div class="settings-card">
                         <h4><i class="fas fa-envelope"></i> Настройки уведомлений</h4>

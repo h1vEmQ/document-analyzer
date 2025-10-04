@@ -24,7 +24,6 @@ class DocumentListView(LoginRequiredMixin, ListView):
     model = Document
     template_name = 'documents/document_list.html'
     context_object_name = 'documents'
-    paginate_by = 20
 
     def get_queryset(self):
         # Показываем только корневые документы (без версий) и документы без родителя
@@ -32,6 +31,12 @@ class DocumentListView(LoginRequiredMixin, ListView):
             user=self.request.user,
             parent_document__isnull=True  # Только документы без родителя (корневые)
         ).order_by('-upload_date')
+    
+    def get_paginate_by(self, queryset):
+        """Получить количество элементов на странице из настроек приложения"""
+        from settings.models import ApplicationSettings
+        settings = ApplicationSettings.get_settings()
+        return settings.items_per_page
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

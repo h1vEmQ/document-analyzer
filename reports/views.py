@@ -24,11 +24,16 @@ class ReportListView(LoginRequiredMixin, ListView):
     model = Report
     template_name = 'reports/report_list.html'
     context_object_name = 'reports'
-    paginate_by = 20
     
     def get_queryset(self):
         # Показываем только корневые отчеты (не версии)
         return Report.objects.filter(user=self.request.user, parent_report__isnull=True).order_by('-generated_date')
+    
+    def get_paginate_by(self, queryset):
+        """Получить количество элементов на странице из настроек приложения"""
+        from settings.models import ApplicationSettings
+        settings = ApplicationSettings.get_settings()
+        return settings.items_per_page
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
