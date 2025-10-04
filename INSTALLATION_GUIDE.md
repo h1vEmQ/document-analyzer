@@ -317,6 +317,23 @@ python test_russian_ollama.py
 ollama serve
 ```
 
+### Проблема: "API error: 404 анализ нейросетью"
+```bash
+# Проверить доступность Ollama
+curl http://localhost:11434/api/tags
+
+# Проверить доступные модели
+curl http://localhost:11434/api/tags | jq '.models[].name'
+
+# Проверить конкретную модель
+curl -X POST http://localhost:11434/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"model": "llama3:latest", "prompt": "Привет", "stream": false}'
+
+# Если модель не найдена, загрузить её
+ollama pull llama3
+```
+
 ### Проблема: "Permission denied" при загрузке файлов
 ```bash
 # Установить права на media папку
