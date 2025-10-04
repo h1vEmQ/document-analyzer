@@ -119,6 +119,12 @@ ollama pull codellama
 curl http://localhost:11434/api/tags
 ```
 
+#### Настройка русского языка:
+Ollama настроен для ответов на русском языке. Для проверки:
+```bash
+python test_russian_ollama.py
+```
+
 ### 3. Настройка Celery Worker
 
 #### Запуск в отдельном терминале:
@@ -228,6 +234,10 @@ celery -A wara_project inspect active
 ```bash
 curl http://localhost:11434/api/tags
 # Должен вернуть список моделей
+
+# Проверка ответов на русском языке
+python test_russian_ollama.py
+# Должен выполнить тесты и показать результаты на русском
 ```
 
 ### 2. Функциональное тестирование
@@ -296,6 +306,15 @@ ollama serve
 
 # Проверить доступность
 curl http://localhost:11434/api/tags
+```
+
+### Проблема: "Ollama отвечает на английском языке"
+```bash
+# Проверить настройки русского языка
+python test_russian_ollama.py
+
+# Если проблемы, перезапустить Ollama
+ollama serve
 ```
 
 ### Проблема: "Permission denied" при загрузке файлов
