@@ -30,27 +30,28 @@ class HTMLReportConverterService:
             .report-container {
                 max-width: 1200px;
                 margin: 0 auto;
-                padding: 20px;
+                padding: 10px;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                line-height: 1.6;
+                line-height: 1.4;
                 color: #333;
+                font-size: 14px;
             }
             .report-header {
-                border-bottom: 2px solid #007bff;
-                padding-bottom: 20px;
-                margin-bottom: 30px;
+                border-bottom: 1px solid #007bff;
+                padding-bottom: 10px;
+                margin-bottom: 15px;
             }
             .report-title {
                 color: #007bff;
-                font-size: 2.5em;
+                font-size: 1.8em;
                 font-weight: bold;
-                margin-bottom: 10px;
+                margin-bottom: 5px;
             }
             .report-meta {
                 display: flex;
-                gap: 30px;
+                gap: 20px;
                 flex-wrap: wrap;
-                margin-bottom: 20px;
+                margin-bottom: 10px;
             }
             .meta-item {
                 display: flex;
@@ -59,59 +60,62 @@ class HTMLReportConverterService:
             .meta-label {
                 font-weight: bold;
                 color: #666;
-                font-size: 0.9em;
+                font-size: 0.8em;
                 text-transform: uppercase;
-                letter-spacing: 0.5px;
+                letter-spacing: 0.3px;
             }
             .meta-value {
                 color: #333;
-                font-size: 1.1em;
+                font-size: 0.95em;
             }
             .report-section {
-                margin-bottom: 30px;
-                padding: 20px;
+                margin-bottom: 15px;
+                padding: 10px;
                 border: 1px solid #e9ecef;
-                border-radius: 8px;
+                border-radius: 4px;
                 background: #f8f9fa;
             }
             .section-title {
                 color: #007bff;
-                font-size: 1.8em;
+                font-size: 1.4em;
                 font-weight: bold;
-                margin-bottom: 15px;
+                margin-bottom: 8px;
                 border-bottom: 1px solid #dee2e6;
-                padding-bottom: 10px;
+                padding-bottom: 5px;
             }
             .subsection-title {
                 color: #495057;
-                font-size: 1.4em;
+                font-size: 1.1em;
                 font-weight: bold;
-                margin-bottom: 12px;
-                margin-top: 20px;
+                margin-bottom: 6px;
+                margin-top: 10px;
             }
             .content-text {
-                margin-bottom: 15px;
+                margin-bottom: 8px;
                 text-align: justify;
+                font-size: 0.95em;
             }
             .highlight-box {
                 background: #fff3cd;
                 border: 1px solid #ffeaa7;
-                border-radius: 5px;
-                padding: 15px;
-                margin: 15px 0;
+                border-radius: 3px;
+                padding: 8px;
+                margin: 8px 0;
+                font-size: 0.9em;
             }
             .info-table {
                 width: 100%;
                 border-collapse: collapse;
-                margin: 15px 0;
+                margin: 8px 0;
                 background: white;
-                border-radius: 5px;
+                border-radius: 3px;
                 overflow: hidden;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                font-size: 0.9em;
             }
             .info-table th,
             .info-table td {
-                padding: 12px 15px;
+                padding: 6px 8px;
                 text-align: left;
                 border-bottom: 1px solid #dee2e6;
             }
@@ -119,14 +123,16 @@ class HTMLReportConverterService:
                 background: #007bff;
                 color: white;
                 font-weight: bold;
+                font-size: 0.85em;
             }
             .info-table tr:hover {
                 background: #f8f9fa;
             }
             .list-item {
-                margin-bottom: 8px;
-                padding-left: 20px;
+                margin-bottom: 4px;
+                padding-left: 15px;
                 position: relative;
+                font-size: 0.9em;
             }
             .list-item::before {
                 content: "•";
@@ -137,11 +143,11 @@ class HTMLReportConverterService:
             }
             .badge {
                 display: inline-block;
-                padding: 4px 8px;
-                font-size: 0.8em;
+                padding: 2px 6px;
+                font-size: 0.7em;
                 font-weight: bold;
-                border-radius: 4px;
-                margin-right: 5px;
+                border-radius: 3px;
+                margin-right: 3px;
             }
             .badge-success { background: #d4edda; color: #155724; }
             .badge-warning { background: #fff3cd; color: #856404; }
@@ -151,20 +157,29 @@ class HTMLReportConverterService:
             .document-comparison {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 20px;
-                margin: 20px 0;
+                gap: 10px;
+                margin: 10px 0;
             }
             .document-section {
-                padding: 15px;
+                padding: 8px;
                 border: 1px solid #dee2e6;
-                border-radius: 5px;
+                border-radius: 3px;
                 background: white;
+                font-size: 0.9em;
             }
             .document-title {
                 font-weight: bold;
                 color: #007bff;
-                margin-bottom: 10px;
-                font-size: 1.2em;
+                margin-bottom: 5px;
+                font-size: 1em;
+            }
+            h3, h4 {
+                margin: 8px 0 4px 0;
+                font-size: 1.1em;
+            }
+            p {
+                margin: 4px 0;
+                font-size: 0.95em;
             }
             @media (max-width: 768px) {
                 .document-comparison {
@@ -172,7 +187,10 @@ class HTMLReportConverterService:
                 }
                 .report-meta {
                     flex-direction: column;
-                    gap: 15px;
+                    gap: 8px;
+                }
+                .report-container {
+                    padding: 5px;
                 }
             }
         </style>
@@ -215,8 +233,12 @@ class HTMLReportConverterService:
                     try:
                         page_text = page.extract_text()
                         if page_text:
-                            text_content += f"<h3>Страница {page_num + 1}</h3>\n"
-                            text_content += f"<div class='content-text'>{self._format_text_content(page_text)}</div>\n"
+                            # Убираем заголовок страницы для компактности, если это не первая страница
+                            if page_num > 0:
+                                text_content += f"<div class='content-text'>{self._format_text_content(page_text)}</div>\n"
+                            else:
+                                text_content += f"<h4 class='subsection-title'>Страница {page_num + 1}</h4>\n"
+                                text_content += f"<div class='content-text'>{self._format_text_content(page_text)}</div>\n"
                     except Exception as e:
                         logger.warning(f"Ошибка извлечения текста со страницы {page_num + 1}: {e}")
                         text_content += f"<p class='text-muted'>Не удалось извлечь текст со страницы {page_num + 1}</p>\n"
@@ -238,7 +260,12 @@ class HTMLReportConverterService:
             
             for paragraph in doc.paragraphs:
                 if paragraph.text.strip():
-                    content += f"<p class='content-text'>{self._format_text_content(paragraph.text)}</p>\n"
+                    # Проверяем стиль параграфа для определения типа контента
+                    if (paragraph.style.name.startswith('Heading') or 
+                        (len(paragraph.text.strip()) < 100 and paragraph.text.strip().isupper())):
+                        content += f"<h4 class='subsection-title'>{self._format_text_content(paragraph.text)}</h4>\n"
+                    else:
+                        content += f"<p class='content-text'>{self._format_text_content(paragraph.text)}</p>\n"
             
             # Извлекаем содержимое таблиц
             for table in doc.tables:
@@ -281,10 +308,11 @@ class HTMLReportConverterService:
                 continue
             
             # Если абзац короткий и в верхнем регистре - делаем заголовком
-            if (len(paragraph) < 80 and 
+            if (len(paragraph) < 60 and 
                 paragraph.isupper() and 
                 any(c.isalpha() for c in paragraph) and
-                not paragraph.endswith('.')):
+                not paragraph.endswith('.') and
+                not paragraph.endswith(':')):
                 formatted_paragraphs.append(f"<h4 class='subsection-title'>{paragraph}</h4>")
             else:
                 formatted_paragraphs.append(f"<p class='content-text'>{paragraph}</p>")
