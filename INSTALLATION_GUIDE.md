@@ -338,8 +338,50 @@ ollama pull llama3
 ```bash
 # Установить права на media папку
 chmod -R 755 media/
-chown -R www-data:www-data media/  # Linux
 ```
+
+### Проблема: "Ошибка при обработке документа" при загрузке
+```bash
+# Проверить формат файла
+file /path/to/document.docx
+# Должен показать: Microsoft Word 2007+ document
+
+# Проверить размер файла
+ls -la /path/to/document.docx
+# Убедиться, что файл не пустой (больше 0 байт)
+
+# Проверить права доступа
+ls -la media/documents/
+# Должны быть права на запись
+
+# Перезапустить Django сервер
+python manage.py runserver
+```
+
+### Проблема: "Package not found" при обработке DOCX
+```bash
+# Проверить, что файл действительно DOCX
+head -c 100 /path/to/document.docx | hexdump -C
+# Должен начинаться с: 50 4b 03 04 (PK..)
+
+# Если файл поврежден, создать новый
+python -c "
+from docx import Document
+doc = Document()
+doc.add_heading('Заголовок', 0)
+doc.add_paragraph('Содержимое документа')
+doc.save('test_new.docx')
+print('Создан новый DOCX файл')
+"
+
+# Загрузить новый файл через веб-интерфейс
+```
+
+### Проблема: "Permission denied" в продакшене
+```bash
+# Установить правильные права
+chown -R www-data:www-data media/  # Linux
+chmod -R 755 media/
 
 ---
 
