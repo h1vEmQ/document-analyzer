@@ -73,6 +73,42 @@ class DocumentParserService:
                 "error": f"Ошибка при обработке документа: {str(e)}"
             }
     
+    def save_parsed_content(self, document: Document, content_data: Dict[str, Any]) -> None:
+        """
+        Сохраняет распарсенное содержимое документа в базу данных
+        """
+        try:
+            # Удаляем старые данные
+            DocumentSection.objects.filter(document=document).delete()
+            DocumentTable.objects.filter(document=document).delete()
+            
+            # Сохраняем разделы
+            for section_data in content_data.get('sections', []):
+                DocumentSection.objects.create(
+                    document=document,
+                    title=section_data['title'],
+                    content=section_data['content'],
+                    level=section_data['level'],
+                    order=section_data['order']
+                )
+            
+            # Сохраняем таблицы
+            for table_data in content_data.get('tables', []):
+                DocumentTable.objects.create(
+                    document=document,
+                    title=table_data['title'],
+                    content=table_data['content'],
+                    rows=table_data['rows'],
+                    columns=table_data['columns'],
+                    order=table_data['order']
+                )
+            
+            logger.info(f"Содержимое документа {document.title} сохранено в БД")
+            
+        except Exception as e:
+            logger.error(f"Ошибка при сохранении содержимого документа {document.title}: {str(e)}")
+            raise
+    
     def _extract_text(self, doc: DocumentType) -> str:
         """
         Извлечение всего текстового содержимого

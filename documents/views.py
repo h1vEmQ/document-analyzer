@@ -104,28 +104,37 @@ class DocumentUploadView(LoginRequiredMixin, CreateView):
             
             # Парсинг документа
             parser_service = DocumentParserService()
-            content_data = parser_service.parse_document(form.instance)
+            parse_result = parser_service.parse_document(form.instance)
             
-            # Сохранение результатов
-            parser_service.save_parsed_content(form.instance, content_data)
-            
-            # Обновляем статус и дату обработки
-            form.instance.status = 'processed'
-            form.instance.processed_date = timezone.now()
-            form.instance.save()
-            
-            # Если парсинг прошел успешно, content_data содержит данные
-            if content_data and 'sections' in content_data:
-                sections_count = len(content_data['sections'])
-                tables_count = len(content_data['tables'])
+            if parse_result['success']:
+                content_data = parse_result['content_data']
                 
-                messages.success(self.request, 
-                    f'Документ успешно загружен и обработан! '
-                    f'Найдено разделов: {sections_count}, '
-                    f'таблиц: {tables_count}')
+                # Сохранение результатов
+                parser_service.save_parsed_content(form.instance, content_data)
+                
+                # Обновляем статус и дату обработки
+                form.instance.status = 'processed'
+                form.instance.processed_date = timezone.now()
+                form.instance.save()
+                
+                # Если парсинг прошел успешно, content_data содержит данные
+                if content_data and 'sections' in content_data:
+                    sections_count = len(content_data['sections'])
+                    tables_count = len(content_data['tables'])
+                    
+                    messages.success(self.request, 
+                        f'Документ успешно загружен и обработан! '
+                        f'Найдено разделов: {sections_count}, '
+                        f'таблиц: {tables_count}')
+                else:
+                    messages.warning(self.request, 
+                        'Документ загружен, но обработка завершилась с ошибками.')
             else:
-                messages.warning(self.request, 
-                    'Документ загружен, но обработка завершилась с ошибками.')
+                # Парсинг не удался
+                form.instance.status = 'error'
+                form.instance.save()
+                messages.error(self.request, 
+                    f'Ошибка при обработке документа: {parse_result.get("error", "Неизвестная ошибка")}')
                 
         except Exception as e:
             logger.error(f"Ошибка автоматической обработки документа {form.instance.id}: {e}")
