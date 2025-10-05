@@ -11,3 +11,9 @@ Admin access check for admin: authenticated=True, superuser=True, admin_role=Tru
 Admin access check for admin: authenticated=True, superuser=True, admin_role=True
 Admin access check for admin: authenticated=True, superuser=True, admin_role=True
 Admin access check for admin: authenticated=True, superuser=True, admin_role=True
+Admin access check for admin: authenticated=True, superuser=True, admin_role=True
+Admin access check for admin: authenticated=True, superuser=True, admin_role=True
+Admin bulk delete page accessed by admin
+Admin access check for admin: authenticated=True, superuser=True, admin_role=True
+Admin access check for admin: authenticated=True, superuser=True, admin_role=True
+Admin bulk delete page accessed by admin

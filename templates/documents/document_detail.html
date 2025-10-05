@@ -310,14 +310,21 @@
                             </div>
                         {% endif %}
                         
-                        <!-- Индикатор загрузки -->
-                        <div id="key-points-loading" class="text-center" style="display: none;">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Загрузка...</span>
+                            <!-- Индикатор загрузки -->
+                            <div id="key-points-loading" class="text-center" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Загрузка...</span>
+                                </div>
+                                <p class="mt-2">Генерируем ключевые моменты...</p>
+                                <small class="text-muted">Это может занять до 90 секунд в зависимости от размера документа и модели нейросети.</small>
+                                <div class="mt-3">
+                                    <div class="progress" style="height: 6px;">
+                                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                             role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <small id="progress-text" class="text-muted">Инициализация...</small>
+                                </div>
                             </div>
-                            <p class="mt-2">Генерируем ключевые моменты...</p>
-                            <small class="text-muted">Это может занять до 90 секунд в зависимости от размера документа и модели нейросети.</small>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -406,6 +413,37 @@ function generateKeyPoints(documentId) {
     document.getElementById('key-points-placeholder').style.display = 'none';
     document.getElementById('key-points-content').style.display = 'none';
     
+    // Инициализируем прогресс
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    let progress = 0;
+    
+    // Симуляция прогресса
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress > 90) progress = 90; // Не доходим до 100% до завершения
+        progressBar.style.width = progress + '%';
+        
+        if (progress < 20) {
+            progressText.textContent = 'Инициализация...';
+        } else if (progress < 40) {
+            progressText.textContent = 'Подключение к нейросети...';
+        } else if (progress < 60) {
+            progressText.textContent = 'Анализ документа...';
+        } else if (progress < 80) {
+            progressText.textContent = 'Генерация ключевых моментов...';
+        } else {
+            progressText.textContent = 'Завершение...';
+        }
+    }, 1000);
+    
+    // Функция для остановки прогресса
+    const stopProgress = () => {
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        progressText.textContent = 'Завершено!';
+    };
+    
     // Делаем AJAX запрос с увеличенным таймаутом
     // Временно используем тестовый endpoint без CSRF
     fetch(`/documents/${documentId}/generate-key-points-test/`, {
@@ -415,13 +453,42 @@ function generateKeyPoints(documentId) {
         },
         signal: AbortSignal.timeout(90000) // 90 секунд
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Перезагружаем страницу для отображения новых ключевых моментов
-            window.location.reload();
-        } else {
-            alert('Ошибка при генерации ключевых моментов: ' + (data.error || 'Неизвестная ошибка'));
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return response.text(); // Сначала получаем как текст
+    })
+    .then(text => {
+        console.log('Raw response:', text);
+        
+        try {
+            const data = JSON.parse(text);
+            console.log('Parsed data:', data);
+            
+            if (data.success) {
+                console.log('Generation successful, reloading page...');
+                stopProgress();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000); // Небольшая задержка для показа завершения
+            } else {
+                console.error('Generation failed:', data.error);
+                stopProgress();
+                alert('Ошибка при генерации ключевых моментов: ' + (data.error || 'Неизвестная ошибка'));
+                // Возвращаем исходное состояние
+                document.getElementById('key-points-loading').style.display = 'none';
+                document.getElementById('key-points-placeholder').style.display = 'block';
+            }
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            console.error('Response text:', text);
+            stopProgress();
+            alert('Ошибка при обработке ответа сервера. Проверьте консоль для подробностей.');
             // Возвращаем исходное состояние
             document.getElementById('key-points-loading').style.display = 'none';
             document.getElementById('key-points-placeholder').style.display = 'block';
@@ -429,6 +496,7 @@ function generateKeyPoints(documentId) {
     })
     .catch(error => {
         console.error('Error:', error);
+        stopProgress();
         if (error.name === 'TimeoutError') {
             alert('Генерация ключевых моментов превысила время ожидания (90 секунд). Попробуйте еще раз или выберите более быструю модель.');
         } else {
