@@ -60,9 +60,15 @@
                                         Вы просматриваете <strong>последнюю версию</strong>
                                     {% else %}
                                         Вы просматриваете <strong>старую версию</strong>. 
-                                        <a href="{% url 'documents:detail' document.get_latest_version.id %}" class="alert-link">
-                                            Перейти к последней версии
-                                        </a>
+                                        {% with latest_version=document.get_latest_version %}
+                                            {% if latest_version and latest_version.id %}
+                                                <a href="{% url 'documents:detail' latest_version.id %}" class="alert-link">
+                                                    Перейти к последней версии
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">Последняя версия недоступна</span>
+                                            {% endif %}
+                                        {% endwith %}
                                     {% endif %}
                                 </div>
                             </div>

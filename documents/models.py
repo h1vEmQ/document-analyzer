@@ -209,6 +209,16 @@ class Document(models.Model):
         """Возвращает количество версий документа"""
         return self.get_version_history().count()
     
+    def get_latest_version(self):
+        """Возвращает последнюю версию документа"""
+        if self.parent_document:
+            # Если это версия, возвращаем последнюю версию родительского документа
+            return self.parent_document.get_latest_version()
+        else:
+            # Если это корневой документ, ищем последнюю версию
+            latest = self.versions.filter(is_latest_version=True).first()
+            return latest if latest else self
+    
     def calculate_checksum(self):
         """Вычисляет SHA-256 контрольную сумму файла"""
         if not self.file:
