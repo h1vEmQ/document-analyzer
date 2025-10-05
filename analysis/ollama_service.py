@@ -237,25 +237,10 @@ class OllamaService:
             Dict с распарсенными данными
         """
         try:
-            # Для DeepSeek моделей ищем JSON после тега </think>
-            if self.model.startswith('deepseek'):
-                # Ищем JSON после тега </think>
-                think_end = response_text.find('</think>')
-                if think_end != -1:
-                    json_text = response_text[think_end + 8:]  # +8 для длины '</think>'
-                    json_start = json_text.find('{')
-                    json_end = json_text.rfind('}') + 1
-                else:
-                    json_start = response_text.find('{')
-                    json_end = response_text.rfind('}') + 1
-                    json_text = response_text
-            else:
-                json_start = response_text.find('{')
-                json_end = response_text.rfind('}') + 1
-                json_text = response_text
+            # Улучшенный парсинг JSON
+            json_str = self._extract_json_from_response(response_text)
             
-            if json_start != -1 and json_end > json_start:
-                json_str = json_text[json_start:json_end]
+            if json_str:
                 # Очищаем JSON от лишних символов
                 json_str = json_str.strip()
                 parsed_data = json.loads(json_str)
@@ -266,22 +251,129 @@ class OllamaService:
                     "raw_response": response_text
                 }
             else:
-                # Если JSON не найден, возвращаем текст как есть
-                return {
-                    "success": True,
-                    "comparison_result": {
-                        "summary": "Анализ выполнен, но результат не в JSON формате",
-                        "raw_analysis": response_text,
-                        "similarities": [],
-                        "differences": [],
-                        "recommendations": [],
-                        "overall_assessment": "Результат требует ручной проверки"
-                    },
-                    "raw_response": response_text
-                }
+                # Если JSON не найден, пытаемся создать структурированный ответ
+                return self._create_fallback_response(response_text, "comparison")
                 
         except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing error: {e}")
+            logger.error(f"Ошибка парсинга JSON: {e}")
+            logger.error(f"Сырой ответ: {response_text}")
+            
+            # Если JSON невалидный, пытаемся исправить
+            try:
+                fixed_json = self._fix_json_format(json_str)
+                if fixed_json:
+                    parsed_data = json.loads(fixed_json)
+                    return {
+                        "success": True,
+                        "comparison_result": parsed_data,
+                        "raw_response": response_text
+                    }
+            except:
+                pass
+            
+            # В крайнем случае возвращаем fallback
+            return self._create_fallback_response(response_text, "comparison")
+        except Exception as e:
+            logger.error(f"Неожиданная ошибка при парсинге ответа: {e}")
+            return self._create_fallback_response(response_text, "comparison")
+    
+    def _extract_json_from_response(self, response_text: str) -> str:
+        """
+        Извлекает JSON из ответа модели
+        
+        Args:
+            response_text: Полный ответ от модели
+            
+        Returns:
+            JSON строка или None
+        """
+        # Для DeepSeek моделей ищем JSON после тега </think>
+        if self.model.startswith('deepseek'):
+            # Ищем JSON после тега </think>
+            think_end = response_text.find('</think>')
+            if think_end != -1:
+                json_text = response_text[think_end + 8:]  # +8 для длины '</think>'
+            else:
+                json_text = response_text
+        else:
+            json_text = response_text
+        
+        # Ищем первый { и последний }
+        json_start = json_text.find('{')
+        json_end = json_text.rfind('}') + 1
+        
+        if json_start != -1 and json_end > json_start:
+            return json_text[json_start:json_end]
+        
+        # Если не нашли, ищем в ```json блоках
+        json_block_start = json_text.find('```json')
+        if json_block_start != -1:
+            json_block_start += 7  # длина '```json'
+            json_block_end = json_text.find('```', json_block_start)
+            if json_block_end != -1:
+                json_content = json_text[json_block_start:json_block_end].strip()
+                json_start = json_content.find('{')
+                json_end = json_content.rfind('}') + 1
+                if json_start != -1 and json_end > json_start:
+                    return json_content[json_start:json_end]
+        
+        # Если не нашли, ищем в ``` блоках
+        code_block_start = json_text.find('```')
+        if code_block_start != -1:
+            code_block_start += 3  # длина '```'
+            code_block_end = json_text.find('```', code_block_start)
+            if code_block_end != -1:
+                code_content = json_text[code_block_start:code_block_end].strip()
+                json_start = code_content.find('{')
+                json_end = code_content.rfind('}') + 1
+                if json_start != -1 and json_end > json_start:
+                    return code_content[json_start:json_end]
+        
+        return None
+    
+    def _fix_json_format(self, json_str: str) -> str:
+        """
+        Пытается исправить невалидный JSON
+        
+        Args:
+            json_str: Невалидный JSON
+            
+        Returns:
+            Исправленный JSON или None
+        """
+        try:
+            # Убираем лишние символы
+            json_str = json_str.strip()
+            
+            # Убираем комментарии (// и /* */)
+            import re
+            json_str = re.sub(r'//.*$', '', json_str, flags=re.MULTILINE)
+            json_str = re.sub(r'/\*.*?\*/', '', json_str, flags=re.DOTALL)
+            
+            # Исправляем одинарные кавычки на двойные
+            json_str = re.sub(r"'([^']*)':", r'"\1":', json_str)
+            json_str = re.sub(r":\s*'([^']*)'", r': "\1"', json_str)
+            
+            # Убираем trailing commas
+            json_str = re.sub(r',\s*}', '}', json_str)
+            json_str = re.sub(r',\s*]', ']', json_str)
+            
+            return json_str
+        except Exception:
+            return None
+    
+    def _create_fallback_response(self, response_text: str, analysis_type: str) -> Dict[str, Any]:
+        """
+        Создает fallback ответ, если JSON не удалось распарсить
+        
+        Args:
+            response_text: Ответ от модели
+            analysis_type: Тип анализа (comparison, sentiment, key_points)
+            
+        Returns:
+            Структурированный ответ
+        """
+        if analysis_type == "comparison":
             return {
                 "success": True,
                 "comparison_result": {
@@ -292,8 +384,39 @@ class OllamaService:
                     "recommendations": [],
                     "overall_assessment": "Результат требует ручной проверки"
                 },
-                "raw_response": response_text,
-                "parse_error": str(e)
+                "raw_response": response_text
+            }
+        elif analysis_type == "sentiment":
+            return {
+                "success": True,
+                "sentiment_result": {
+                    "sentiment": "neutral",
+                    "confidence": 0.0,
+                    "emotions": [],
+                    "summary": "Анализ выполнен, но результат не в JSON формате",
+                    "raw_analysis": response_text
+                },
+                "raw_response": response_text
+            }
+        elif analysis_type == "key_points":
+            return {
+                "success": True,
+                "key_points_result": {
+                    "key_points": [],
+                    "summary": "Анализ выполнен, но результат не в JSON формате",
+                    "main_topics": [],
+                    "raw_analysis": response_text
+                },
+                "raw_response": response_text
+            }
+        else:
+            return {
+                "success": True,
+                "result": {
+                    "summary": "Анализ выполнен, но результат не в JSON формате",
+                    "raw_analysis": response_text
+                },
+                "raw_response": response_text
             }
     
     def analyze_document_sentiment(self, content: str) -> Dict[str, Any]:
@@ -357,13 +480,35 @@ class OllamaService:
                     
                     return {
                         "success": True,
-                        "sentiment_result": parsed_data
+                        "sentiment_result": parsed_data,
+                        "raw_response": response_text
                     }
+                else:
+                    # Если JSON не найден, создаем fallback ответ
+                    return self._create_fallback_response(response_text, "sentiment")
                     
             except json.JSONDecodeError as e:
-                logger.error(f"JSON parsing error in sentiment analysis: {e}")
-                logger.error(f"Raw response: {response_text}")
-                pass
+                logger.error(f"Ошибка парсинга JSON: {e}")
+                logger.error(f"Сырой ответ: {response_text}")
+                
+                # Если JSON невалидный, пытаемся исправить
+                try:
+                    fixed_json = self._fix_json_format(json_str)
+                    if fixed_json:
+                        parsed_data = json.loads(fixed_json)
+                        return {
+                            "success": True,
+                            "sentiment_result": parsed_data,
+                            "raw_response": response_text
+                        }
+                except:
+                    pass
+                
+                # В крайнем случае возвращаем fallback
+                return self._create_fallback_response(response_text, "sentiment")
+            except Exception as e:
+                logger.error(f"Неожиданная ошибка при парсинге ответа: {e}")
+                return self._create_fallback_response(response_text, "sentiment")
         
         return {
             "success": False,
@@ -437,13 +582,35 @@ class OllamaService:
                     
                     return {
                         "success": True,
-                        "key_points_result": parsed_data
+                        "key_points_result": parsed_data,
+                        "raw_response": response_text
                     }
+                else:
+                    # Если JSON не найден, создаем fallback ответ
+                    return self._create_fallback_response(response_text, "key_points")
                     
             except json.JSONDecodeError as e:
-                logger.error(f"JSON parsing error in key points extraction: {e}")
-                logger.error(f"Raw response: {response_text}")
-                pass
+                logger.error(f"Ошибка парсинга JSON: {e}")
+                logger.error(f"Сырой ответ: {response_text}")
+                
+                # Если JSON невалидный, пытаемся исправить
+                try:
+                    fixed_json = self._fix_json_format(json_str)
+                    if fixed_json:
+                        parsed_data = json.loads(fixed_json)
+                        return {
+                            "success": True,
+                            "key_points_result": parsed_data,
+                            "raw_response": response_text
+                        }
+                except:
+                    pass
+                
+                # В крайнем случае возвращаем fallback
+                return self._create_fallback_response(response_text, "key_points")
+            except Exception as e:
+                logger.error(f"Неожиданная ошибка при парсинге ответа: {e}")
+                return self._create_fallback_response(response_text, "key_points")
         
         return {
             "success": False,
