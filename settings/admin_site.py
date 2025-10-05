@@ -37,7 +37,7 @@ class WARAAdminSite(AdminSite):
         settings = ApplicationSettings.get_settings()
         
         if request.method == 'POST':
-            form = ApplicationSettingsForm(request.POST, instance=settings)
+            form = ApplicationSettingsForm(request.POST, instance=settings, user=request.user)
             if form.is_valid():
                 form.instance.updated_by = request.user
                 form.save()
@@ -46,7 +46,7 @@ class WARAAdminSite(AdminSite):
             else:
                 messages.error(request, 'Ошибка при сохранении настроек. Проверьте введенные данные.')
         else:
-            form = ApplicationSettingsForm(instance=settings)
+            form = ApplicationSettingsForm(instance=settings, user=request.user)
         
         context = {
             'form': form,
@@ -68,12 +68,13 @@ class WARAAdminSite(AdminSite):
             settings = ApplicationSettings.get_settings()
             
             # Сброс к значениям по умолчанию
-            settings.app_name = 'WARA'
+            settings.app_name = '📊 Анализатор документов'
             settings.app_description = 'Система анализа документов'
             settings.max_file_size = 10485760  # 10MB
             settings.allowed_file_types = 'docx,pdf'
             settings.auto_analysis_enabled = True
             settings.analysis_timeout = 300
+            settings.default_neural_network_model = 'llama3'
             settings.auto_reports_enabled = True
             settings.default_report_format = 'pdf'
             settings.email_notifications_enabled = False

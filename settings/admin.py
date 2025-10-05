@@ -18,6 +18,8 @@ class ApplicationSettingsForm(forms.ModelForm):
         fields = '__all__'
     
     def __init__(self, *args, **kwargs):
+        # Извлекаем user из kwargs если он есть
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
         # Настраиваем поле модели по умолчанию
@@ -48,7 +50,7 @@ class ApplicationSettingsForm(forms.ModelForm):
                     display_name = model_display_names.get(model, model)
                     model_choices.append((model, display_name))
                 
-                # Заменяем CharField на ChoiceField
+                # Всегда заменяем CharField на ChoiceField
                 if model_choices:
                     self.fields['default_neural_network_model'] = forms.ChoiceField(
                         choices=model_choices,
@@ -56,12 +58,30 @@ class ApplicationSettingsForm(forms.ModelForm):
                         help_text='Выберите модель нейросети по умолчанию для анализа документов'
                     )
                 else:
-                    self.fields['default_neural_network_model'].help_text = 'Модели не установлены в Ollama'
+                    # Если модели не найдены, показываем поле с пустыми вариантами
+                    self.fields['default_neural_network_model'] = forms.ChoiceField(
+                        choices=[('', 'Модели не найдены')],
+                        label='Модель нейросети по умолчанию',
+                        help_text='Модели не установлены в Ollama. Установите модели в Ollama для выбора.',
+                        required=False
+                    )
             else:
-                self.fields['default_neural_network_model'].help_text = 'Ollama сервис недоступен'
+                # Если Ollama недоступен, показываем поле с информационным сообщением
+                self.fields['default_neural_network_model'] = forms.ChoiceField(
+                    choices=[('', 'Ollama недоступен')],
+                    label='Модель нейросети по умолчанию',
+                    help_text='Ollama сервис недоступен. Запустите Ollama для выбора модели.',
+                    required=False
+                )
                 
         except Exception as e:
-            self.fields['default_neural_network_model'].help_text = f'Ошибка получения моделей: {str(e)}'
+            # В случае ошибки показываем поле с информацией об ошибке
+            self.fields['default_neural_network_model'] = forms.ChoiceField(
+                choices=[('', 'Ошибка получения моделей')],
+                label='Модель нейросети по умолчанию',
+                help_text=f'Ошибка получения моделей: {str(e)}',
+                required=False
+            )
 
 
 @admin.register(ApplicationSettings)
@@ -70,6 +90,18 @@ class ApplicationSettingsAdmin(admin.ModelAdmin):
     
     # Используем кастомную форму
     form = ApplicationSettingsForm
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """Переопределяем метод для передачи user в форму"""
+        form = super().get_form(request, obj, **kwargs)
+        
+        # Создаем обертку для формы, которая передает user
+        class FormWithUser(form):
+            def __init__(self, *args, **kwargs):
+                kwargs['user'] = request.user
+                super().__init__(*args, **kwargs)
+        
+        return FormWithUser
     
     # Настройки отображения в списке
     list_display = [
@@ -206,51 +238,7 @@ class ApplicationSettingsChangeList(ChangeList):
         return context
 
 
-# Добавляем кастомную страницу настроек в админ-панель
-class WARAAdminSite(AdminSite):
-    """Кастомная админ-панель WARA"""
-    
-    site_header = 'WARA Админ-панель'
-    site_title = 'WARA'
-    index_title = 'Управление системой'
-    
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [
-            path('settings/', self.admin_view(self.settings_view), name='settings'),
-        ]
-        return custom_urls + urls
-    
-    def settings_view(self, request):
-        """Кастомное представление страницы настроек"""
-        settings = ApplicationSettings.get_settings()
-        
-        if request.method == 'POST':
-            # Обработка формы настроек
-            settings.app_name = request.POST.get('app_name', settings.app_name)
-            settings.app_description = request.POST.get('app_description', settings.app_description)
-            settings.max_file_size = int(request.POST.get('max_file_size', settings.max_file_size))
-            settings.allowed_file_types = request.POST.get('allowed_file_types', settings.allowed_file_types)
-            settings.auto_analysis_enabled = request.POST.get('auto_analysis_enabled') == 'on'
-            settings.analysis_timeout = int(request.POST.get('analysis_timeout', settings.analysis_timeout))
-            settings.default_neural_network_model = request.POST.get('default_neural_network_model', settings.default_neural_network_model)
-            settings.auto_reports_enabled = request.POST.get('auto_reports_enabled') == 'on'
-            settings.default_report_format = request.POST.get('default_report_format', settings.default_report_format)
-            settings.email_notifications_enabled = request.POST.get('email_notifications_enabled') == 'on'
-            settings.notification_email = request.POST.get('notification_email', settings.notification_email)
-            settings.session_timeout = int(request.POST.get('session_timeout', settings.session_timeout))
-            settings.max_login_attempts = int(request.POST.get('max_login_attempts', settings.max_login_attempts))
-            settings.updated_by = request.user
-            settings.save()
-            
-            messages.success(request, 'Настройки успешно сохранены!')
-        
-        context = {
-            'settings': settings,
-            'title': 'Настройки приложения',
-            'site_header': self.site_header,
-            'site_title': self.site_title,
-            'has_permission': True,
-        }
-        
-        return render(request, 'admin/settings.html', context)
+# Кастомная админ-панель настроек удалена - используется admin_site.py
+
+# Импортируем кастомную админ-панель
+from .admin_site import admin_site

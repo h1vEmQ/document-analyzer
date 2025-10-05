@@ -408,6 +408,23 @@ document.addEventListener('DOMContentLoaded', function() {
                                value="{{ settings.analysis_timeout }}" min="1" max="3600">
                         <div class="help-text">Максимальное время выполнения анализа (1-3600 секунд)</div>
                     </div>
+                    
+                    <div class="form-group">
+                        <label for="default_neural_network_model">Модель нейросети по умолчанию</label>
+                        <select name="default_neural_network_model" id="default_neural_network_model" class="form-control">
+                            <option value="llama3" {% if settings.default_neural_network_model == 'llama3' %}selected{% endif %}>Llama 3</option>
+                            <option value="llama3.1" {% if settings.default_neural_network_model == 'llama3.1' %}selected{% endif %}>Llama 3.1</option>
+                            <option value="llama3:latest" {% if settings.default_neural_network_model == 'llama3:latest' %}selected{% endif %}>Llama 3 (Latest)</option>
+                            <option value="llama3.1:latest" {% if settings.default_neural_network_model == 'llama3.1:latest' %}selected{% endif %}>Llama 3.1 (Latest)</option>
+                            <option value="mistral" {% if settings.default_neural_network_model == 'mistral' %}selected{% endif %}>Mistral</option>
+                            <option value="mistral:latest" {% if settings.default_neural_network_model == 'mistral:latest' %}selected{% endif %}>Mistral (Latest)</option>
+                            <option value="codellama" {% if settings.default_neural_network_model == 'codellama' %}selected{% endif %}>Code Llama</option>
+                            <option value="codellama:latest" {% if settings.default_neural_network_model == 'codellama:latest' %}selected{% endif %}>Code Llama (Latest)</option>
+                            <option value="deepseek-r1:7b" {% if settings.default_neural_network_model == 'deepseek-r1:7b' %}selected{% endif %}>DeepSeek R1 7B</option>
+                            <option value="deepseek-r1:8b" {% if settings.default_neural_network_model == 'deepseek-r1:8b' %}selected{% endif %}>DeepSeek R1 8B</option>
+                        </select>
+                        <div class="help-text">Выберите модель нейросети по умолчанию для анализа документов</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -526,6 +543,7 @@ function resetToDefaults() {
         document.getElementById('allowed_file_types').value = 'docx,pdf';
         document.getElementById('auto_analysis_enabled').checked = true;
         document.getElementById('analysis_timeout').value = '300';
+        document.getElementById('default_neural_network_model').value = 'llama3';
         document.getElementById('auto_reports_enabled').checked = true;
         document.getElementById('default_report_format').value = 'pdf';
         document.getElementById('email_notifications_enabled').checked = false;
