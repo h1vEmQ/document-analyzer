@@ -5,6 +5,7 @@ from django.views.generic import ListView, DetailView, CreateView, DeleteView, V
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -96,9 +97,12 @@ class DocumentUploadView(LoginRequiredMixin, CreateView):
             form.instance.version = existing_document.get_next_version()
             form.instance.is_latest_version = True
             
-            # Обновляем предыдущую версию
-            existing_document.is_latest_version = False
-            existing_document.save()
+            # Сбрасываем флаг is_latest_version у всех версий этого документа
+            root_document = existing_document.parent_document if existing_document.parent_document else existing_document
+            all_versions = Document.objects.filter(
+                Q(id=root_document.id) | Q(parent_document=root_document.id)
+            )
+            all_versions.update(is_latest_version=False)
             
             # Добавляем заметки к версии
             if version_notes:
