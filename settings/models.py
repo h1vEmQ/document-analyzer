@@ -37,6 +37,11 @@ class ApplicationSettings(models.Model):
         default=300,  # 5 минут
         verbose_name='Таймаут анализа (секунды)'
     )
+    default_neural_network_model = models.CharField(
+        max_length=100,
+        default='llama3',
+        verbose_name='Модель нейросети по умолчанию'
+    )
     
     # Настройки отчетов
     auto_reports_enabled = models.BooleanField(
@@ -114,6 +119,7 @@ class ApplicationSettings(models.Model):
                 'app_name': 'Document analyzer',
                 'app_description': 'Система анализа документов',
                 'items_per_page': 10,
+                'default_neural_network_model': 'llama3',
             }
         )
         return settings

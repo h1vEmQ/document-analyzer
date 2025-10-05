@@ -161,8 +161,23 @@ class OllamaComparisonForm(forms.Form):
         available_models = self.get_available_models()
         if available_models:
             self.fields['model'].choices = available_models
-            # Устанавливаем первую доступную модель как значение по умолчанию
-            self.fields['model'].initial = available_models[0][0]
+            
+            # Устанавливаем модель по умолчанию из настроек приложения
+            try:
+                from settings.models import ApplicationSettings
+                settings = ApplicationSettings.get_settings()
+                default_model = settings.default_neural_network_model
+                
+                # Проверяем, есть ли модель по умолчанию среди доступных
+                available_model_names = [choice[0] for choice in available_models]
+                if default_model in available_model_names:
+                    self.fields['model'].initial = default_model
+                else:
+                    # Если модели по умолчанию нет, используем первую доступную
+                    self.fields['model'].initial = available_models[0][0]
+            except Exception:
+                # В случае ошибки используем первую доступную модель
+                self.fields['model'].initial = available_models[0][0]
         else:
             # Если нет доступных моделей, скрываем поле
             self.fields['model'].choices = [('', 'Модели не установлены')]

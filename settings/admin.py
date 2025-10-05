@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.utils.html import format_html
+from django import forms
 from .models import ApplicationSettings
 
 User = get_user_model()
@@ -9,9 +10,66 @@ User = get_user_model()
 from .admin_site import admin_site
 
 
+class ApplicationSettingsForm(forms.ModelForm):
+    """Кастомная форма для настроек приложения"""
+    
+    class Meta:
+        model = ApplicationSettings
+        fields = '__all__'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Настраиваем поле модели по умолчанию
+        try:
+            # Получаем доступные модели из Ollama
+            from analysis.ollama_service import OllamaService
+            ollama_service = OllamaService()
+            
+            if ollama_service.is_available():
+                available_models = ollama_service.get_available_models()
+                
+                # Создаем choices для поля
+                model_choices = []
+                for model in available_models:
+                    # Маппинг технических названий на читаемые
+                    model_display_names = {
+                        'llama3': 'Llama 3',
+                        'llama3.1': 'Llama 3.1',
+                        'llama3:latest': 'Llama 3',
+                        'llama3.1:latest': 'Llama 3.1',
+                        'mistral': 'Mistral',
+                        'mistral:latest': 'Mistral',
+                        'codellama': 'Code Llama',
+                        'codellama:latest': 'Code Llama',
+                        'deepseek-r1:7b': 'DeepSeek R1 7B',
+                        'deepseek-r1:8b': 'DeepSeek R1 8B',
+                    }
+                    display_name = model_display_names.get(model, model)
+                    model_choices.append((model, display_name))
+                
+                # Заменяем CharField на ChoiceField
+                if model_choices:
+                    self.fields['default_neural_network_model'] = forms.ChoiceField(
+                        choices=model_choices,
+                        label='Модель нейросети по умолчанию',
+                        help_text='Выберите модель нейросети по умолчанию для анализа документов'
+                    )
+                else:
+                    self.fields['default_neural_network_model'].help_text = 'Модели не установлены в Ollama'
+            else:
+                self.fields['default_neural_network_model'].help_text = 'Ollama сервис недоступен'
+                
+        except Exception as e:
+            self.fields['default_neural_network_model'].help_text = f'Ошибка получения моделей: {str(e)}'
+
+
 @admin.register(ApplicationSettings)
 class ApplicationSettingsAdmin(admin.ModelAdmin):
     """Админ-класс для настроек приложения"""
+    
+    # Используем кастомную форму
+    form = ApplicationSettingsForm
     
     # Настройки отображения в списке
     list_display = [
@@ -36,7 +94,7 @@ class ApplicationSettingsAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Настройки анализа', {
-            'fields': ('auto_analysis_enabled', 'analysis_timeout'),
+            'fields': ('auto_analysis_enabled', 'analysis_timeout', 'default_neural_network_model'),
             'classes': ('collapse',)
         }),
         ('Настройки отчетов', {
@@ -115,6 +173,7 @@ class ApplicationSettingsAdmin(admin.ModelAdmin):
             settings.allowed_file_types = 'docx,pdf'
             settings.auto_analysis_enabled = True
             settings.analysis_timeout = 300
+            settings.default_neural_network_model = 'llama3'
             settings.auto_reports_enabled = True
             settings.default_report_format = 'pdf'
             settings.email_notifications_enabled = False
@@ -174,6 +233,7 @@ class WARAAdminSite(AdminSite):
             settings.allowed_file_types = request.POST.get('allowed_file_types', settings.allowed_file_types)
             settings.auto_analysis_enabled = request.POST.get('auto_analysis_enabled') == 'on'
             settings.analysis_timeout = int(request.POST.get('analysis_timeout', settings.analysis_timeout))
+            settings.default_neural_network_model = request.POST.get('default_neural_network_model', settings.default_neural_network_model)
             settings.auto_reports_enabled = request.POST.get('auto_reports_enabled') == 'on'
             settings.default_report_format = request.POST.get('default_report_format', settings.default_report_format)
             settings.email_notifications_enabled = request.POST.get('email_notifications_enabled') == 'on'
