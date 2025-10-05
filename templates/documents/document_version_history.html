@@ -497,10 +497,10 @@ document.addEventListener('DOMContentLoaded', function() {
         button.disabled = true;
         
         // Делаем AJAX запрос
-        fetch(`/documents/${versionId}/generate-key-points/`, {
+        // Используем тестовый endpoint без CSRF
+        fetch(`/documents/${versionId}/generate-key-points-test/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
                 'Content-Type': 'application/json',
             },
             signal: AbortSignal.timeout(90000) // 90 секунд

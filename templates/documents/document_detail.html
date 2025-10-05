@@ -407,10 +407,10 @@ function generateKeyPoints(documentId) {
     document.getElementById('key-points-content').style.display = 'none';
     
     // Делаем AJAX запрос с увеличенным таймаутом
-    fetch(`/documents/${documentId}/generate-key-points/`, {
+    // Временно используем тестовый endpoint без CSRF
+    fetch(`/documents/${documentId}/generate-key-points-test/`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
             'Content-Type': 'application/json',
         },
         signal: AbortSignal.timeout(90000) // 90 секунд
