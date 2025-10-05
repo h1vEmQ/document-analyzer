@@ -412,37 +412,40 @@ class DocumentKeyPointsService:
             if not content or len(content.strip()) < 50:
                 raise ValueError("Недостаточно содержимого для генерации ключевых моментов")
             
-            # Генерируем ключевые моменты через Ollama с таймаутом
-            import signal
+            logger.info(f"Начинаем генерацию ключевых моментов для документа {document.id} с содержимым {len(content)} символов")
             
-            def timeout_handler(signum, frame):
-                raise TimeoutError("Генерация ключевых моментов превысила время ожидания")
+            # Генерируем ключевые моменты через Ollama
+            result = self.ollama_service.extract_key_points(content)
             
-            # Устанавливаем таймаут 60 секунд
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(60)
-            
-            try:
-                result = self.ollama_service.extract_key_points(content)
-            finally:
-                signal.alarm(0)  # Отменяем таймаут
+            logger.info(f"Результат от Ollama для документа {document.id}: {result.get('success', False)}")
             
             if result.get("success", False):
                 key_points_result = result.get("key_points_result", {})
                 
+                # Извлекаем ключевые моменты
+                key_points = key_points_result.get("key_points", [])
+                summary = key_points_result.get("summary", "")
+                main_topics = key_points_result.get("main_topics", [])
+                
+                logger.info(f"Получено ключевых моментов: {len(key_points)}")
+                
                 # Сохраняем ключевые моменты в документ
-                document.key_points = key_points_result.get("key_points", [])
+                document.key_points = key_points
                 document.key_points_generated_date = self.timezone.now()
-                document.save()
+                document.save(update_fields=['key_points', 'key_points_generated_date'])
+                
+                logger.info(f"Ключевые моменты сохранены для документа {document.id}")
                 
                 return {
                     "success": True,
-                    "key_points": key_points_result.get("key_points", []),
-                    "summary": key_points_result.get("summary", ""),
-                    "main_topics": key_points_result.get("main_topics", [])
+                    "key_points": key_points,
+                    "summary": summary,
+                    "main_topics": main_topics
                 }
             else:
-                raise Exception(result.get("error", "Неизвестная ошибка при генерации"))
+                error_msg = result.get("error", "Неизвестная ошибка при генерации")
+                logger.error(f"Ollama вернул ошибку для документа {document.id}: {error_msg}")
+                raise Exception(error_msg)
                 
         except Exception as e:
             logger.error(f"Ошибка при генерации ключевых моментов для документа {document.id}: {str(e)}")

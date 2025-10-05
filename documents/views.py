@@ -777,6 +777,13 @@ class DocumentTestKeyPointsView(LoginRequiredMixin, View):
                 try:
                     test_content = document.get_content_text()[:500]  # Первые 500 символов
                     test_result = ollama_service.extract_key_points(test_content)
+                    
+                    # Если тест прошел успешно, пробуем полную генерацию
+                    if test_result.get('success'):
+                        key_points_service = DocumentKeyPointsService()
+                        full_result = key_points_service.generate_key_points(document)
+                        test_result['full_generation'] = full_result
+                        
                 except Exception as e:
                     test_result = {'success': False, 'error': str(e)}
             
@@ -797,4 +804,62 @@ class DocumentTestKeyPointsView(LoginRequiredMixin, View):
             return JsonResponse({
                 'success': False,
                 'error': f'Внутренняя ошибка сервера: {str(e)}'
+            }, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DocumentGenerateKeyPointsTestView(View):
+    """
+    Тестовый endpoint для генерации ключевых моментов (без CSRF)
+    """
+    
+    def post(self, request, pk):
+        """
+        POST запрос для генерации ключевых моментов
+        """
+        try:
+            document = get_object_or_404(Document, pk=pk)
+            
+            # Проверяем, что документ обработан
+            if document.status != 'processed':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Документ должен быть обработан перед генерацией ключевых моментов'
+                }, status=400)
+            
+            # Проверяем, что есть содержимое
+            if not document.has_content():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Документ не содержит извлеченного содержимого'
+                }, status=400)
+            
+            # Генерируем ключевые моменты
+            key_points_service = DocumentKeyPointsService()
+            result = key_points_service.generate_key_points(document)
+            
+            if result['success']:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Ключевые моменты успешно сгенерированы',
+                    'key_points_count': len(result.get('key_points', [])),
+                    'document_id': document.id,
+                    'document_title': document.title
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': result.get('error', 'Неизвестная ошибка при генерации')
+                }, status=500)
+                
+        except Document.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Документ не найден'
+            }, status=404)
+        except Exception as e:
+            logger.error(f"Ошибка при генерации ключевых моментов для документа {pk}: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Внутренняя ошибка сервера'
             }, status=500)

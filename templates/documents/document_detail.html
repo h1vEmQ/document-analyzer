@@ -261,13 +261,13 @@
                             <div id="key-points-content">
                                 {% for point in document.get_key_points %}
                                     {% if point.point %}
-                                        <div class="mb-3 p-3 border rounded {% if point.importance == 'high' %}bg-warning bg-opacity-10{% elif point.importance == 'medium' %}bg-info bg-opacity-10{% else %}bg-light{% endif %}">
+                                        <div class="mb-3 p-3 border rounded {% if point.importance == 'высокий' or point.importance == 'high' %}bg-warning bg-opacity-10{% elif point.importance == 'средний' or point.importance == 'medium' %}bg-info bg-opacity-10{% else %}bg-light{% endif %}">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div class="flex-grow-1">
                                                     <h6 class="mb-2">
-                                                        {% if point.importance == 'high' %}
+                                                        {% if point.importance == 'высокий' or point.importance == 'high' %}
                                                             <i class="fas fa-star text-warning"></i>
-                                                        {% elif point.importance == 'medium' %}
+                                                        {% elif point.importance == 'средний' or point.importance == 'medium' %}
                                                             <i class="fas fa-circle text-info"></i>
                                                         {% else %}
                                                             <i class="fas fa-dot-circle text-secondary"></i>
