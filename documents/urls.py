@@ -14,4 +14,5 @@ urlpatterns = [
     path('<int:pk>/version/delete/', views.DocumentVersionDeleteView.as_view(), name='version_delete'),
     path('<int:pk>/versions/', views.DocumentVersionHistoryView.as_view(), name='version_history'),
     path('bulk-delete/', views.DocumentBulkDeleteView.as_view(), name='bulk_delete'),
+    path('versions/bulk-delete/', views.DocumentVersionBulkDeleteView.as_view(), name='version_bulk_delete'),
 ]

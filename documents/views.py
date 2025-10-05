@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, View
+from django.core.paginator import Paginator
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -399,10 +400,17 @@ class DocumentVersionHistoryView(LoginRequiredMixin, DetailView):
         root_document = document.get_root_document()
         versions = root_document.get_version_history()
         
+        # Добавляем пагинацию
+        paginator = Paginator(versions, 10)  # 10 версий на страницу
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
         context['root_document'] = root_document
-        context['versions'] = versions
+        context['versions'] = page_obj
         context['version_count'] = versions.count()
         context['latest_version'] = root_document.get_latest_version()
+        context['page_obj'] = page_obj
+        context['is_paginated'] = page_obj.has_other_pages()
         
         return context
 
@@ -589,3 +597,71 @@ class DocumentBulkDeleteView(LoginRequiredMixin, View):
                 'success': False,
                 'message': f'Ошибка при удалении документов: {str(e)}'
             })
+
+
+class DocumentVersionBulkDeleteView(LoginRequiredMixin, View):
+    """
+    Массовое удаление версий документов
+    """
+    
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            version_ids = data.get('version_ids', [])
+            
+            if not version_ids:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Не выбрано ни одной версии для удаления'
+                }, status=400)
+            
+            # Получаем версии документов пользователя
+            versions = Document.objects.filter(
+                id__in=version_ids,
+                user=request.user
+            )
+            
+            if not versions.exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Версии не найдены или у вас нет прав на их удаление'
+                }, status=404)
+            
+            # Проверяем, что не удаляется последняя версия
+            latest_versions = versions.filter(is_latest_version=True)
+            if latest_versions.exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Нельзя удалить текущую версию документа'
+                }, status=400)
+            
+            # Проверяем, что не удаляется корневой документ
+            root_versions = versions.filter(parent_document__isnull=True)
+            if root_versions.exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Нельзя удалить корневую версию документа'
+                }, status=400)
+            
+            versions_count = versions.count()
+            
+            # Удаляем версии
+            versions.delete()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Успешно удалено {versions_count} версий документов',
+                'deleted_count': versions_count
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Неверный формат данных'
+            }, status=400)
+        except Exception as e:
+            logger.error(f"Error in DocumentVersionBulkDeleteView: {e}")
+            return JsonResponse({
+                'success': False,
+                'message': 'Ошибка при удалении версий документов'
+            }, status=500)

@@ -11,13 +11,38 @@
                 <h2><i class="fas fa-history"></i> История версий документа</h2>
                 <p class="text-muted mb-0">{{ root_document.title }}</p>
             </div>
-            <div>
+            <div class="btn-group" role="group">
                 <a href="{% url 'documents:detail' root_document.pk %}" class="btn btn-outline-primary">
                     <i class="fas fa-arrow-left"></i> К документу
                 </a>
                 <a href="{% url 'documents:version_upload' latest_version.pk %}" class="btn btn-primary">
                     <i class="fas fa-upload"></i> Загрузить новую версию
                 </a>
+            </div>
+        </div>
+        
+        <!-- Панель массовых действий -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+                <div class="text-muted me-3">
+                    Всего версий: {{ version_count }}
+                </div>
+                <div class="bulk-actions" style="display: none;">
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="bulkDeleteBtn" disabled>
+                        <i class="fas fa-trash-alt"></i> Удалить выбранные
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAllBtn">
+                        <i class="fas fa-check-square"></i> Выбрать все
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn" style="display: none;">
+                        <i class="fas fa-square"></i> Снять выбор
+                    </button>
+                </div>
+            </div>
+            <div class="text-muted">
+                {% if is_paginated %}
+                    Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                {% endif %}
             </div>
         </div>
         
@@ -74,17 +99,28 @@
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
+                                    <th style="width: 5%;">
+                                        <input type="checkbox" id="selectAllCheckbox" class="form-check-input">
+                                    </th>
+                                    <th style="width: 5%;"><i class="fas fa-hashtag"></i></th>
                                     <th style="width: 10%;"><i class="fas fa-hashtag"></i> Версия</th>
                                     <th style="width: 15%;"><i class="fas fa-calendar"></i> Дата</th>
                                     <th style="width: 10%;"><i class="fas fa-weight"></i> Размер</th>
                                     <th style="width: 15%;"><i class="fas fa-info-circle"></i> Статус</th>
-                                    <th style="width: 35%;"><i class="fas fa-sticky-note"></i> Заметки</th>
+                                    <th style="width: 25%;"><i class="fas fa-sticky-note"></i> Заметки</th>
                                     <th style="width: 15%;"><i class="fas fa-cogs"></i> Действия</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for version in versions %}
                                 <tr class="{% if version.is_latest_version %}table-success{% endif %}">
+                                    <td>
+                                        {% if not version.is_latest_version and version.parent_document %}
+                                            <input type="checkbox" class="form-check-input version-checkbox" 
+                                                   value="{{ version.id }}" data-version-id="{{ version.id }}">
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-muted">{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <strong>{{ version.version }}</strong>
@@ -191,6 +227,243 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Пагинация -->
+        {% if is_paginated %}
+            <nav aria-label="Навигация по страницам" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                
+                <div class="text-center text-muted small mt-2">
+                    Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                    ({{ page_obj.paginator.count }} версий)
+                </div>
+            </nav>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.version-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const bulkActions = document.querySelector('.bulk-actions');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    
+    // Показываем/скрываем панель действий при выборе чекбоксов
+    function toggleBulkActions() {
+        const checkedBoxes = document.querySelectorAll('.version-checkbox:checked');
+        if (checkedBoxes.length > 0) {
+            bulkActions.style.display = 'block';
+            bulkDeleteBtn.disabled = false;
+            bulkDeleteBtn.textContent = `Удалить выбранные (${checkedBoxes.length})`;
+        } else {
+            bulkActions.style.display = 'none';
+            bulkDeleteBtn.disabled = true;
+        }
+    }
+    
+    // Обработчики для чекбоксов версий
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            toggleBulkActions();
+            updateSelectAllState();
+        });
+    });
+    
+    // Обработчик для "Выбрать все"
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            toggleBulkActions();
+        });
+    }
+    
+    // Обновление состояния "Выбрать все"
+    function updateSelectAllState() {
+        if (!selectAllCheckbox) return;
+        
+        const checkedBoxes = document.querySelectorAll('.version-checkbox:checked');
+        const allBoxes = document.querySelectorAll('.version-checkbox');
+        
+        if (checkedBoxes.length === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (checkedBoxes.length === allBoxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+    
+    // Кнопка "Выбрать все"
+    selectAllBtn.addEventListener('click', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        toggleBulkActions();
+        updateSelectAllState();
+        this.style.display = 'none';
+        deselectAllBtn.style.display = 'inline-block';
+    });
+    
+    // Кнопка "Снять выбор"
+    deselectAllBtn.addEventListener('click', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        toggleBulkActions();
+        updateSelectAllState();
+        this.style.display = 'none';
+        selectAllBtn.style.display = 'inline-block';
+    });
+    
+    // Массовое удаление
+    bulkDeleteBtn.addEventListener('click', function() {
+        const checkedBoxes = document.querySelectorAll('.version-checkbox:checked');
+        const versionIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+        
+        if (versionIds.length === 0) {
+            alert('Не выбрано ни одной версии для удаления');
+            return;
+        }
+        
+        const confirmMessage = `Вы действительно хотите удалить выбранные версии?\n\n` +
+                              `Будет удалено: ${versionIds.length} версий\n` +
+                              `Это действие необратимо!\n\n` +
+                              `Нажмите OK для подтверждения или Отмена для отмены.`;
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        // Показываем индикатор загрузки
+        const originalText = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Удаление...';
+        this.disabled = true;
+        
+        // Отправляем запрос на удаление
+        fetch('{% url "documents:version_bulk_delete" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            body: JSON.stringify({
+                version_ids: versionIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Показываем сообщение об успехе
+                showMessage('success', data.message);
+                
+                // Удаляем элементы из DOM
+                checkedBoxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    if (row) {
+                        row.style.transition = 'opacity 0.3s';
+                        row.style.opacity = '0';
+                        setTimeout(() => {
+                            row.remove();
+                        }, 300);
+                    }
+                });
+                
+                // Скрываем панель действий
+                setTimeout(() => {
+                    bulkActions.style.display = 'none';
+                    selectAllBtn.style.display = 'inline-block';
+                    deselectAllBtn.style.display = 'none';
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = false;
+                        selectAllCheckbox.indeterminate = false;
+                    }
+                }, 500);
+                
+            } else {
+                showMessage('error', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('error', 'Произошла ошибка при удалении версий');
+        })
+        .finally(() => {
+            // Восстанавливаем кнопку
+            this.innerHTML = originalText;
+            this.disabled = false;
+        });
+    });
+    
+    // Функция для показа сообщений
+    function showMessage(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${alertClass} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            <i class="${icon}"></i> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Вставляем сообщение в начало контейнера
+        const container = document.querySelector('.container-fluid') || document.querySelector('.container');
+        if (container) {
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // Автоматически скрываем через 5 секунд
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+    }
+});
+</script>
 {% endblock %}
