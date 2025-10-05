@@ -1,7 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load i18n admin_urls static admin_modify %}
 
-{% block title %}Настройки приложения | {{ site_title|default:"📊 Анализатор документов" }}{% endblock %}
+{% block title %}Настройки приложения | {{ site_title|default:app_name }}{% endblock %}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">

@@ -1,9 +1,9 @@
 {% extends "admin/base.html" %}
 
-{% block title %}{{ title }} | {{ site_title|default:"📊 Анализатор документов" }}{% endblock %}
+{% block title %}{{ title }} | {{ site_title|default:app_name }}{% endblock %}
 
 {% block branding %}
-<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:"📊 Анализатор документов - Админ-панель" }}</a></h1>
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:app_name|add:" - Админ-панель" }}</a></h1>
 {% endblock %}
 
 {% block nav-global %}
