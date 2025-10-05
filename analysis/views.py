@@ -320,10 +320,29 @@ class OllamaComparisonCreateView(LoginRequiredMixin, View):
         ollama_available = ollama_service.is_available()
         available_models = ollama_service.get_available_models() if ollama_available else []
         
+        # Создаем читаемые названия моделей
+        model_display_names = {
+            'llama3': 'Llama 3',
+            'llama3.1': 'Llama 3.1',
+            'llama3:latest': 'Llama 3',
+            'llama3.1:latest': 'Llama 3.1',
+            'mistral': 'Mistral',
+            'mistral:latest': 'Mistral',
+            'codellama': 'Code Llama',
+            'codellama:latest': 'Code Llama',
+            'deepseek-r1:7b': 'DeepSeek R1 7B',
+            'deepseek-r1:8b': 'DeepSeek R1 8B',
+        }
+        
+        readable_models = []
+        for model in available_models:
+            display_name = model_display_names.get(model, model)
+            readable_models.append(display_name)
+        
         context = {
             'form': form,
             'ollama_available': ollama_available,
-            'available_models': available_models,
+            'available_models': readable_models,
         }
         
         return render(request, 'analysis/ollama_comparison_create.html', context)

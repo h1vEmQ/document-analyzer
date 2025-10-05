@@ -149,12 +149,10 @@
                                 <!-- Информация о доступных моделях -->
                                 <div class="model-info mt-2">
                                     <small>
-                                        {% if form.model.choices|length > 1 %}
+                                        {% if available_models and available_models|length > 0 %}
                                             <strong>Доступные модели:</strong><br>
-                                            {% for value, label in form.model.choices %}
-                                                {% if value %}
-                                                    • {{ label }}<br>
-                                                {% endif %}
+                                            {% for model in available_models %}
+                                                • {{ model }}<br>
                                             {% endfor %}
                                         {% else %}
                                             <i class="fas fa-exclamation-triangle text-warning"></i>
