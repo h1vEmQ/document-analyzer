@@ -14,6 +14,23 @@
                     {% csrf_token %}
                     
                     <div class="mb-3">
+                        <label for="{{ form.existing_document.id_for_label }}" class="form-label">
+                            {{ form.existing_document.label }}
+                        </label>
+                        {{ form.existing_document }}
+                        {% if form.existing_document.errors %}
+                            <div class="text-danger">
+                                {% for error in form.existing_document.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Выберите существующий документ для создания новой версии или оставьте "Создать новый документ"
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="title-field">
                         <label for="{{ form.title.id_for_label }}" class="form-label">
                             {{ form.title.label }}
                         </label>
@@ -27,6 +44,23 @@
                         {% endif %}
                         <div class="form-text">
                             Если оставить пустым, название будет автоматически взято из имени файла
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="version-notes-field">
+                        <label for="{{ form.version_notes.id_for_label }}" class="form-label">
+                            {{ form.version_notes.label }}
+                        </label>
+                        {{ form.version_notes }}
+                        {% if form.version_notes.errors %}
+                            <div class="text-danger">
+                                {% for error in form.version_notes.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Опишите изменения в новой версии (опционально)
                         </div>
                     </div>
                     
@@ -64,4 +98,62 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const existingDocumentSelect = document.getElementById('id_existing_document');
+    const titleField = document.getElementById('title-field');
+    const versionNotesField = document.getElementById('version-notes-field');
+    const titleInput = document.getElementById('id_title');
+    
+    function toggleFields() {
+        const isExistingDocument = existingDocumentSelect.value !== '';
+        
+        if (isExistingDocument) {
+            // Показываем поле заметок к версии
+            versionNotesField.style.display = 'block';
+            
+            // Делаем поле названия необязательным и заполняем его из выбранного документа
+            const selectedOption = existingDocumentSelect.options[existingDocumentSelect.selectedIndex];
+            if (selectedOption.value) {
+                titleInput.value = selectedOption.text;
+                titleInput.readOnly = true;
+                titleInput.style.backgroundColor = '#f8f9fa';
+                
+                // Обновляем label
+                const titleLabel = titleField.querySelector('label');
+                titleLabel.textContent = 'Название документа (автозаполнено)';
+                
+                // Обновляем подсказку
+                const formText = titleField.querySelector('.form-text');
+                formText.textContent = 'Название автоматически взято из выбранного документа';
+            }
+        } else {
+            // Скрываем поле заметок к версии
+            versionNotesField.style.display = 'none';
+            
+            // Делаем поле названия редактируемым
+            titleInput.readOnly = false;
+            titleInput.style.backgroundColor = '';
+            titleInput.value = '';
+            
+            // Обновляем label
+            const titleLabel = titleField.querySelector('label');
+            titleLabel.textContent = 'Название документа';
+            
+            // Обновляем подсказку
+            const formText = titleField.querySelector('.form-text');
+            formText.textContent = 'Если оставить пустым, название будет автоматически взято из имени файла';
+        }
+    }
+    
+    // Инициализация при загрузке страницы
+    toggleFields();
+    
+    // Обработчик изменения выбора документа
+    existingDocumentSelect.addEventListener('change', toggleFields);
+});
+</script>
+{% endblock %}
 {% endblock %}

@@ -70,15 +70,39 @@ class DocumentDetailView(LoginRequiredMixin, DetailView):
 
 class DocumentUploadView(LoginRequiredMixin, CreateView):
     """
-    Загрузка нового документа
+    Загрузка нового документа или создание новой версии существующего
     """
     model = Document
     form_class = DocumentUploadForm
     template_name = 'documents/document_upload.html'
     success_url = reverse_lazy('documents:list')
     
+    def get_form_kwargs(self):
+        """Передаем пользователя в форму"""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
     def form_valid(self, form):
         form.instance.user = self.request.user
+        
+        # Проверяем, создается ли новая версия существующего документа
+        existing_document = form.cleaned_data.get('existing_document')
+        version_notes = form.cleaned_data.get('version_notes', '')
+        
+        if existing_document:
+            # Создаем новую версию существующего документа
+            form.instance.parent_document = existing_document
+            form.instance.version = existing_document.get_next_version()
+            form.instance.is_latest_version = True
+            
+            # Обновляем предыдущую версию
+            existing_document.is_latest_version = False
+            existing_document.save()
+            
+            # Добавляем заметки к версии
+            if version_notes:
+                form.instance.version_notes = version_notes
         
         # Валидация файла
         validation_service = DocumentValidationService()
@@ -122,10 +146,16 @@ class DocumentUploadView(LoginRequiredMixin, CreateView):
                     sections_count = len(content_data['sections'])
                     tables_count = len(content_data['tables'])
                     
-                    messages.success(self.request, 
-                        f'Документ успешно загружен и обработан! '
-                        f'Найдено разделов: {sections_count}, '
-                        f'таблиц: {tables_count}')
+                    if existing_document:
+                        messages.success(self.request, 
+                            f'Новая версия документа успешно создана и обработана! '
+                            f'Версия: {form.instance.version} '
+                            f'(найдено разделов: {sections_count}, таблиц: {tables_count})')
+                    else:
+                        messages.success(self.request, 
+                            f'Документ успешно загружен и обработан! '
+                            f'Найдено разделов: {sections_count}, '
+                            f'таблиц: {tables_count}')
                 else:
                     messages.warning(self.request, 
                         'Документ загружен, но обработка завершилась с ошибками.')

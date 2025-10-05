@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import FileExtensionValidator
+from django.db.models import Q
 import hashlib
 import os
 
@@ -244,6 +245,41 @@ class Document(models.Model):
     def get_content_text(self):
         """Возвращает извлеченное текстовое содержимое документа"""
         return self.content_text or ""
+    
+    def get_next_version(self):
+        """Возвращает следующий номер версии для документа"""
+        try:
+            # Получаем все версии этого документа
+            versions = Document.objects.filter(
+                Q(id=self.id) | Q(parent_document=self.id) | Q(parent_document=self.parent_document)
+            ).exclude(id=self.id).order_by('version')
+            
+            if not versions.exists():
+                # Если это первая версия, возвращаем 2.0
+                return '2.0'
+            
+            # Парсим версии и находим максимальную
+            max_version = 1.0
+            for doc in versions:
+                try:
+                    version_parts = doc.version.split('.')
+                    if len(version_parts) == 2:
+                        major, minor = int(version_parts[0]), int(version_parts[1])
+                        version_num = major + (minor / 10.0)
+                        max_version = max(max_version, version_num)
+                except (ValueError, IndexError):
+                    continue
+            
+            # Увеличиваем версию на 0.1
+            next_version = max_version + 0.1
+            major = int(next_version)
+            minor = int((next_version - major) * 10)
+            return f"{major}.{minor}"
+            
+        except Exception:
+            # В случае ошибки возвращаем простую инкрементальную версию
+            version_count = self.get_version_count()
+            return f"{version_count + 1}.0"
 
 
 class DocumentSection(models.Model):
