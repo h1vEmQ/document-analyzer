@@ -16,9 +16,10 @@
                         <i class="fas fa-history"></i> История версий
                     </a>
                 {% endif %}
-                {% if document.status == 'uploaded' %}
+                {% if document.status == 'uploaded' or document.status == 'error' %}
                     <a href="{% url 'documents:parse' document.pk %}" class="btn btn-success">
-                        <i class="fas fa-cog"></i> Обработать
+                        <i class="fas fa-cog"></i> 
+                        {% if document.status == 'error' %}Повторить обработку{% else %}Обработать{% endif %}
                     </a>
                 {% endif %}
                 <a href="{% url 'documents:delete' document.pk %}" 
@@ -146,6 +147,41 @@
                         </table>
                     </div>
                 </div>
+                
+                <!-- Информация об ошибке (если статус error) -->
+                {% if document.status == 'error' %}
+                <div class="card mt-3">
+                    <div class="card-header bg-danger text-white">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Ошибка обработки документа</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-info-circle"></i> Что произошло:</h6>
+                            <p class="mb-2">Документ был загружен, но автоматическая обработка завершилась с ошибкой.</p>
+                            
+                            <h6><i class="fas fa-tools"></i> Что можно сделать:</h6>
+                            <ul class="mb-3">
+                                <li>Нажмите кнопку <strong>"Повторить обработку"</strong> для повторной попытки</li>
+                                <li>Проверьте, что файл не поврежден и имеет правильный формат (.docx)</li>
+                                <li>Убедитесь, что размер файла не превышает 10 МБ</li>
+                            </ul>
+                            
+                            <div class="d-grid">
+                                <a href="{% url 'documents:parse' document.pk %}" class="btn btn-success">
+                                    <i class="fas fa-redo"></i> Повторить обработку
+                                </a>
+                            </div>
+                        </div>
+                        
+                        {% if document.processing_error %}
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-bug"></i> Техническая информация об ошибке:</h6>
+                            <pre class="mb-0 small">{{ document.processing_error }}</pre>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
             
             <div class="col-md-6">

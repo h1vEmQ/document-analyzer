@@ -161,15 +161,19 @@ class DocumentUploadView(LoginRequiredMixin, CreateView):
                         'Документ загружен, но обработка завершилась с ошибками.')
             else:
                 # Парсинг не удался
+                error_message = parse_result.get("error", "Неизвестная ошибка")
                 form.instance.status = 'error'
+                form.instance.processing_error = error_message
                 form.instance.save()
                 messages.error(self.request, 
-                    f'Ошибка при обработке документа: {parse_result.get("error", "Неизвестная ошибка")}')
+                    f'Ошибка при обработке документа: {error_message}')
                 
         except Exception as e:
             logger.error(f"Ошибка автоматической обработки документа {form.instance.id}: {e}")
             # Устанавливаем статус ошибки
+            error_message = str(e)
             form.instance.status = 'error'
+            form.instance.processing_error = error_message
             form.instance.save()
             
             messages.warning(self.request, 
@@ -212,15 +216,19 @@ class DocumentParseView(LoginRequiredMixin, DetailView):
                 messages.success(request, 'Документ успешно обработан!')
                 
             except ValidationError as e:
+                error_message = str(e)
                 document.status = 'error'
+                document.processing_error = error_message
                 document.save()
-                messages.error(request, f'Ошибка при обработке документа: {str(e)}')
+                messages.error(request, f'Ошибка при обработке документа: {error_message}')
                 
             except Exception as e:
+                error_message = str(e)
                 document.status = 'error'
+                document.processing_error = error_message
                 document.save()
-                logger.error(f"Неожиданная ошибка при парсинге документа {document.id}: {str(e)}")
-                messages.error(request, 'Произошла неожиданная ошибка при обработке документа.')
+                logger.error(f"Неожиданная ошибка при парсинге документа {document.id}: {error_message}")
+                messages.error(request, f'Произошла неожиданная ошибка при обработке документа: {error_message}')
         
         elif document.status == 'processed':
             messages.info(request, 'Документ уже обработан.')
@@ -318,7 +326,9 @@ class DocumentVersionUploadView(LoginRequiredMixin, View):
                         
                 except Exception as e:
                     logger.error(f"Ошибка автоматической обработки новой версии {new_document.id}: {e}")
+                    error_message = str(e)
                     new_document.status = 'error'
+                    new_document.processing_error = error_message
                     new_document.save()
                     
                     messages.warning(request, 

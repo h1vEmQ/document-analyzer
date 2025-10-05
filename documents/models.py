@@ -68,6 +68,11 @@ class Document(models.Model):
         verbose_name='Дата обработки'
     )
     
+    processing_error = models.TextField(
+        blank=True,
+        verbose_name='Ошибка обработки'
+    )
+    
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
