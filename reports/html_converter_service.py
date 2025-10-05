@@ -548,6 +548,7 @@ class HTMLReportConverterService:
                     <td>Метод анализа</td>
                     <td>{escape(comparison.analysis_method or 'Не указан')}</td>
                 </tr>
+                {self._get_neural_network_info_html(comparison)}
                 <tr>
                     <td>Статус анализа</td>
                     <td>
@@ -589,6 +590,40 @@ class HTMLReportConverterService:
         """
         
         return html
+    
+    def _get_neural_network_info_html(self, comparison) -> str:
+        """Возвращает HTML с информацией о нейросети"""
+        if not comparison.analysis_method:
+            return ""
+        
+        # Определяем название модели для отображения
+        if 'deepseek' in comparison.analysis_method:
+            model_name = "DeepSeek R1 7B"
+            badge_class = "badge-primary"
+        elif 'llama3' in comparison.analysis_method:
+            model_name = "Llama 3"
+            badge_class = "badge-primary"
+        elif 'llama3.1' in comparison.analysis_method:
+            model_name = "Llama 3.1"
+            badge_class = "badge-primary"
+        elif 'mistral' in comparison.analysis_method:
+            model_name = "Mistral"
+            badge_class = "badge-primary"
+        elif 'codellama' in comparison.analysis_method:
+            model_name = "Code Llama"
+            badge_class = "badge-primary"
+        else:
+            model_name = comparison.analysis_method
+            badge_class = "badge-secondary"
+        
+        return f"""
+                <tr>
+                    <td>Нейросеть</td>
+                    <td>
+                        <span class="badge {badge_class}">{model_name}</span>
+                    </td>
+                </tr>
+        """
     
     def _create_fallback_html(self, report) -> str:
         """Создает базовый HTML для неизвестного формата"""

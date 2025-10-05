@@ -125,6 +125,26 @@
                                     </a>
                                 </td>
                             </tr>
+                            {% if report.comparison.analysis_method %}
+                                <tr>
+                                    <td><strong>Нейросеть:</strong></td>
+                                    <td>
+                                        {% if 'deepseek' in report.comparison.analysis_method %}
+                                            <span class="badge bg-primary">DeepSeek R1 7B</span>
+                                        {% elif 'llama3' in report.comparison.analysis_method %}
+                                            <span class="badge bg-primary">Llama 3</span>
+                                        {% elif 'llama3.1' in report.comparison.analysis_method %}
+                                            <span class="badge bg-primary">Llama 3.1</span>
+                                        {% elif 'mistral' in report.comparison.analysis_method %}
+                                            <span class="badge bg-primary">Mistral</span>
+                                        {% elif 'codellama' in report.comparison.analysis_method %}
+                                            <span class="badge bg-primary">Code Llama</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ report.comparison.analysis_method }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endif %}
                             <tr>
                                 <td><strong>Дата генерации:</strong></td>
                                 <td>{{ report.generated_date|date:"d.m.Y H:i" }}</td>

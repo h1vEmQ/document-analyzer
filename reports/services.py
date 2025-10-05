@@ -327,7 +327,37 @@ class PDFReportGeneratorService:
         
         elements.append(Paragraph(comparison_info, self.styles['CustomBodyText']))
         
+        # Информация о нейросети, если используется AI-анализ
+        if comparison.analysis_method:
+            neural_network_info = self._get_neural_network_info_text(comparison)
+            elements.append(Paragraph(neural_network_info, self.styles['CustomBodyText']))
+        
         return elements
+    
+    def _get_neural_network_info_text(self, comparison) -> str:
+        """Возвращает текст с информацией о нейросети для PDF"""
+        if not comparison.analysis_method:
+            return ""
+        
+        # Определяем название модели для отображения
+        if 'deepseek' in comparison.analysis_method:
+            model_name = "DeepSeek R1 7B"
+        elif 'llama3' in comparison.analysis_method:
+            model_name = "Llama 3"
+        elif 'llama3.1' in comparison.analysis_method:
+            model_name = "Llama 3.1"
+        elif 'mistral' in comparison.analysis_method:
+            model_name = "Mistral"
+        elif 'codellama' in comparison.analysis_method:
+            model_name = "Code Llama"
+        else:
+            model_name = comparison.analysis_method
+        
+        return f"""
+        <b>Neural Network:</b><br/>
+        • Model: {model_name}<br/>
+        • Method: {comparison.analysis_method}
+        """
 
 
 class EmailReportService:
@@ -917,7 +947,7 @@ class OllamaReportGeneratorService:
         info_data = [
             ['Базовый документ:', f"{comparison.base_document.title} (v{comparison.base_document.version})"],
             ['Сравниваемый документ:', f"{comparison.compared_document.title} (v{comparison.compared_document.version})"],
-            ['Модель нейросети:', comparison.analysis_method or 'Не указана'],
+            ['Модель нейросети:', self._get_neural_network_display_name(comparison.analysis_method)],
             ['Дата анализа:', comparison.created_date.strftime('%d.%m.%Y %H:%M')],
             ['Статус:', comparison.get_status_display()]
         ]
@@ -1149,7 +1179,7 @@ class OllamaReportGeneratorService:
         info_data = [
             ('Базовый документ:', f"{comparison.base_document.title} (v{comparison.base_document.version})"),
             ('Сравниваемый документ:', f"{comparison.compared_document.title} (v{comparison.compared_document.version})"),
-            ('Модель нейросети:', comparison.analysis_method or 'Не указана'),
+            ('Модель нейросети:', self._get_neural_network_display_name(comparison.analysis_method)),
             ('Дата анализа:', comparison.created_date.strftime('%d.%m.%Y %H:%M')),
             ('Статус:', comparison.get_status_display())
         ]
@@ -1338,3 +1368,21 @@ class OllamaReportGeneratorService:
         logger.info(f"Created Ollama analysis report {report.id} for comparison {comparison.id}")
         
         return report
+    
+    def _get_neural_network_display_name(self, analysis_method: str) -> str:
+        """Возвращает читаемое название модели нейросети"""
+        if not analysis_method:
+            return "Не указана"
+        
+        if 'deepseek' in analysis_method:
+            return "DeepSeek R1 7B"
+        elif 'llama3' in analysis_method:
+            return "Llama 3"
+        elif 'llama3.1' in analysis_method:
+            return "Llama 3.1"
+        elif 'mistral' in analysis_method:
+            return "Mistral"
+        elif 'codellama' in analysis_method:
+            return "Code Llama"
+        else:
+            return analysis_method
