@@ -1,0 +1,4 @@
+Admin access check for anonymous: authenticated=False, superuser=False, admin_role=False
+Admin access denied for anonymous
+Admin access check for anonymous: authenticated=False, superuser=False, admin_role=False
+Admin access denied for anonymous

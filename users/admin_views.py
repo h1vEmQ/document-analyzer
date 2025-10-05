@@ -26,12 +26,17 @@ class AdminRequiredMixin(UserPassesTestMixin):
     Миксин для проверки прав администратора
     """
     def test_func(self):
-        return self.request.user.is_authenticated and (
-            self.request.user.is_superuser or 
-            self.request.user.role == 'admin'
-        )
+        is_authenticated = self.request.user.is_authenticated
+        is_superuser = self.request.user.is_superuser if is_authenticated else False
+        is_admin_role = getattr(self.request.user, 'role', None) == 'admin' if is_authenticated else False
+        
+        logger.info(f"Admin access check for {self.request.user.username if is_authenticated else 'anonymous'}: "
+                   f"authenticated={is_authenticated}, superuser={is_superuser}, admin_role={is_admin_role}")
+        
+        return is_authenticated and (is_superuser or is_admin_role)
     
     def handle_no_permission(self):
+        logger.warning(f"Admin access denied for {self.request.user.username if self.request.user.is_authenticated else 'anonymous'}")
         messages.error(self.request, 'У вас нет прав для доступа к этой странице.')
         return redirect('documents:list')
 
@@ -358,6 +363,7 @@ class AdminBulkDeleteDocumentsView(AdminRequiredMixin, View):
     
     def get(self, request):
         """Показывает страницу подтверждения"""
+        logger.info(f"Admin bulk delete page accessed by {request.user.username}")
         return render(request, 'users/admin/bulk_delete_documents.html', {
             'total_documents': Document.objects.count(),
             'total_comparisons': Comparison.objects.count(),
@@ -366,11 +372,14 @@ class AdminBulkDeleteDocumentsView(AdminRequiredMixin, View):
     
     def post(self, request):
         """Выполняет массовое удаление"""
+        logger.info(f"Admin bulk delete POST request from {request.user.username}")
         try:
             # Получаем количество документов до удаления
             documents_count = Document.objects.count()
             comparisons_count = Comparison.objects.count()
             reports_count = Report.objects.count()
+            
+            logger.info(f"Before deletion: {documents_count} documents, {comparisons_count} comparisons, {reports_count} reports")
             
             # Удаляем все отчеты (они связаны с документами)
             deleted_reports = reports_count
@@ -391,8 +400,8 @@ class AdminBulkDeleteDocumentsView(AdminRequiredMixin, View):
             logger.info(f"Admin {request.user.username} performed bulk delete: {deleted_documents} documents, {deleted_comparisons} comparisons, {deleted_reports} reports")
             
         except Exception as e:
-            messages.error(request, f'Ошибка при массовом удалении: {str(e)}')
             logger.error(f"Error in bulk delete by admin {request.user.username}: {str(e)}")
+            messages.error(request, f'Ошибка при массовом удалении: {str(e)}')
         
         return redirect('users:admin_list')
 
