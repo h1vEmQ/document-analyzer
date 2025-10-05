@@ -118,6 +118,19 @@ class Document(models.Model):
         verbose_name='Метаданные'
     )
     
+    # Ключевые моменты документа
+    key_points = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Ключевые моменты'
+    )
+    
+    key_points_generated_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Дата генерации ключевых моментов'
+    )
+    
     class Meta:
         verbose_name = 'Документ'
         verbose_name_plural = 'Документы'
@@ -209,6 +222,12 @@ class Document(models.Model):
         """Возвращает количество версий документа"""
         return self.get_version_history().count()
     
+    def get_versions_with_key_points(self):
+        """Возвращает версии документа с ключевыми моментами"""
+        return self.get_version_history().filter(
+            Q(key_points__isnull=False) & ~Q(key_points=[])
+        )
+    
     def get_latest_version(self):
         """Возвращает последнюю версию документа"""
         if self.parent_document:
@@ -260,6 +279,26 @@ class Document(models.Model):
     def get_content_text(self):
         """Возвращает извлеченное текстовое содержимое документа"""
         return self.content_text or ""
+    
+    def has_key_points(self):
+        """Проверяет, есть ли сгенерированные ключевые моменты"""
+        return bool(self.key_points and len(self.key_points) > 0)
+    
+    def get_key_points(self):
+        """Возвращает ключевые моменты документа"""
+        return self.key_points or []
+    
+    def get_key_points_summary(self):
+        """Возвращает краткое резюме из ключевых моментов"""
+        if not self.has_key_points():
+            return ""
+        
+        # Ищем резюме в ключевых моментах
+        for point in self.key_points:
+            if isinstance(point, dict) and 'summary' in point:
+                return point['summary']
+        
+        return ""
     
     def get_next_version(self):
         """Возвращает следующий номер версии для документа"""

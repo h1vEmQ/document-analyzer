@@ -3,6 +3,7 @@
 {% block title %}{{ document.title }}{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -47,6 +48,7 @@
                                         <option value="{{ version.id }}" {% if version.id == document.id %}selected{% endif %}>
                                             v{{ version.version }} - {{ version.upload_date|date:"d.m.Y H:i" }}
                                             {% if version.is_latest_version %}(Последняя){% endif %}
+                                            {% if version.has_key_points %}🔑{% endif %}
                                         </option>
                                     {% endfor %}
                                 </select>
@@ -70,6 +72,14 @@
                                             {% endif %}
                                         {% endwith %}
                                     {% endif %}
+                                    <br><small>🔑 = версия с ключевыми моментами</small>
+                                    {% with versions_with_key_points=document.get_versions_with_key_points %}
+                                        {% if versions_with_key_points.count > 0 %}
+                                            <br><small class="text-success">
+                                                <i class="fas fa-key"></i> {{ versions_with_key_points.count }} из {{ document.get_version_count }} версий имеют ключевые моменты
+                                            </small>
+                                        {% endif %}
+                                    {% endwith %}
                                 </div>
                             </div>
                         </div>
@@ -222,6 +232,94 @@
                         {% endif %}
                     </div>
                 </div>
+                
+                <!-- Секция ключевых моментов -->
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>🔑 Ключевые моменты 
+                            {% if document.get_version_count > 1 %}
+                                <small class="text-muted">(версия {{ document.version }})</small>
+                            {% endif %}
+                        </h5>
+                        {% if document.has_content and document.status == 'processed' %}
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        onclick="generateKeyPoints({{ document.pk }})"
+                                        {% if document.has_key_points %}disabled{% endif %}>
+                                    <i class="fas fa-magic"></i> 
+                                    {% if document.has_key_points %}Сгенерированы{% else %}Сгенерировать{% endif %}
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="testKeyPoints({{ document.pk }})">
+                                    <i class="fas fa-bug"></i> Тест
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if document.has_key_points %}
+                            <div id="key-points-content">
+                                {% for point in document.get_key_points %}
+                                    {% if point.point %}
+                                        <div class="mb-3 p-3 border rounded {% if point.importance == 'high' %}bg-warning bg-opacity-10{% elif point.importance == 'medium' %}bg-info bg-opacity-10{% else %}bg-light{% endif %}">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-2">
+                                                        {% if point.importance == 'high' %}
+                                                            <i class="fas fa-star text-warning"></i>
+                                                        {% elif point.importance == 'medium' %}
+                                                            <i class="fas fa-circle text-info"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-dot-circle text-secondary"></i>
+                                                        {% endif %}
+                                                        {{ point.point }}
+                                                    </h6>
+                                                    {% if point.category %}
+                                                        <span class="badge bg-secondary">{{ point.category }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if document.get_key_points_summary %}
+                                    <div class="mt-3 p-3 bg-primary bg-opacity-10 border rounded">
+                                        <h6><i class="fas fa-file-alt"></i> Краткое резюме:</h6>
+                                        <p class="mb-0">{{ document.get_key_points_summary }}</p>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if document.key_points_generated_date %}
+                                    <div class="mt-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> Сгенерировано: {{ document.key_points_generated_date|date:"d.m.Y H:i" }}
+                                        </small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div id="key-points-placeholder" class="text-center text-muted">
+                                {% if document.has_content and document.status == 'processed' %}
+                                    <p><i class="fas fa-lightbulb fa-3x mb-3"></i></p>
+                                    <p>Нажмите кнопку "Сгенерировать" для создания ключевых моментов документа</p>
+                                {% else %}
+                                    <p><i class="fas fa-info-circle fa-2x mb-3"></i></p>
+                                    <p>Сначала обработайте документ для генерации ключевых моментов</p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Индикатор загрузки -->
+                        <div id="key-points-loading" class="text-center" style="display: none;">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                            <p class="mt-2">Генерируем ключевые моменты...</p>
+                            <small class="text-muted">Это может занять до 90 секунд в зависимости от размера документа и модели нейросети.</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -300,6 +398,96 @@
 function changeVersion(versionId) {
     // Перенаправляем на детальный просмотр выбранной версии
     window.location.href = '/documents/' + versionId + '/';
+}
+
+function generateKeyPoints(documentId) {
+    // Показываем индикатор загрузки
+    document.getElementById('key-points-loading').style.display = 'block';
+    document.getElementById('key-points-placeholder').style.display = 'none';
+    document.getElementById('key-points-content').style.display = 'none';
+    
+    // Делаем AJAX запрос с увеличенным таймаутом
+    fetch(`/documents/${documentId}/generate-key-points/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(90000) // 90 секунд
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Перезагружаем страницу для отображения новых ключевых моментов
+            window.location.reload();
+        } else {
+            alert('Ошибка при генерации ключевых моментов: ' + (data.error || 'Неизвестная ошибка'));
+            // Возвращаем исходное состояние
+            document.getElementById('key-points-loading').style.display = 'none';
+            document.getElementById('key-points-placeholder').style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (error.name === 'TimeoutError') {
+            alert('Генерация ключевых моментов превысила время ожидания (90 секунд). Попробуйте еще раз или выберите более быструю модель.');
+        } else {
+            alert('Ошибка при генерации ключевых моментов: ' + error.message);
+        }
+        // Возвращаем исходное состояние
+        document.getElementById('key-points-loading').style.display = 'none';
+        document.getElementById('key-points-placeholder').style.display = 'block';
+    });
+}
+
+function testKeyPoints(documentId) {
+    // Показываем индикатор загрузки
+    document.getElementById('key-points-loading').style.display = 'block';
+    document.getElementById('key-points-placeholder').style.display = 'none';
+    document.getElementById('key-points-content').style.display = 'none';
+    
+    // Делаем AJAX запрос
+    fetch(`/documents/${documentId}/test-key-points/`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Скрываем индикатор загрузки
+        document.getElementById('key-points-loading').style.display = 'none';
+        
+        if (data.success) {
+            // Показываем результаты теста
+            let testInfo = `
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> Результаты тестирования:</h6>
+                    <p><strong>Статус документа:</strong> ${data.status_info.document_status}</p>
+                    <p><strong>Содержимое:</strong> ${data.status_info.has_content ? 'Есть (' + data.status_info.content_length + ' символов)' : 'Нет'}</p>
+                    <p><strong>Ollama доступен:</strong> ${data.ollama_info.available ? 'Да' : 'Нет'}</p>
+                    <p><strong>Текущая модель:</strong> ${data.ollama_info.current_model}</p>
+                    <p><strong>Доступные модели:</strong> ${data.ollama_info.available_models.join(', ')}</p>
+                    ${data.test_result ? `
+                        <p><strong>Тест генерации:</strong> ${data.test_result.success ? 'Успешно' : 'Ошибка: ' + data.test_result.error}</p>
+                    ` : ''}
+                </div>
+            `;
+            
+            document.getElementById('key-points-placeholder').innerHTML = testInfo;
+            document.getElementById('key-points-placeholder').style.display = 'block';
+        } else {
+            alert('Ошибка при тестировании: ' + (data.error || 'Неизвестная ошибка'));
+            document.getElementById('key-points-placeholder').style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при тестировании');
+        document.getElementById('key-points-loading').style.display = 'none';
+        document.getElementById('key-points-placeholder').style.display = 'block';
+    });
 }
 </script>
 {% endblock %}

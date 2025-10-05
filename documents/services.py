@@ -373,3 +373,80 @@ class DocumentValidationService:
         }
         
         return validation_result
+
+
+class DocumentKeyPointsService:
+    """
+    Сервис для генерации ключевых моментов документа
+    """
+    
+    def __init__(self):
+        from analysis.ollama_service import OllamaService
+        from django.utils import timezone
+        from settings.models import ApplicationSettings
+        
+        # Получаем модель из настроек приложения
+        settings = ApplicationSettings.get_settings()
+        model = settings.default_neural_network_model or 'llama3'
+        
+        self.ollama_service = OllamaService(model=model)
+        self.timezone = timezone
+    
+    def generate_key_points(self, document):
+        """
+        Генерирует ключевые моменты для документа
+        
+        Args:
+            document: Объект Document
+            
+        Returns:
+            Dict с результатами генерации
+        """
+        try:
+            if not document.has_content():
+                raise ValueError("Документ должен быть обработан перед генерацией ключевых моментов")
+            
+            # Получаем содержимое документа
+            content = document.get_content_text()
+            
+            if not content or len(content.strip()) < 50:
+                raise ValueError("Недостаточно содержимого для генерации ключевых моментов")
+            
+            # Генерируем ключевые моменты через Ollama с таймаутом
+            import signal
+            
+            def timeout_handler(signum, frame):
+                raise TimeoutError("Генерация ключевых моментов превысила время ожидания")
+            
+            # Устанавливаем таймаут 60 секунд
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(60)
+            
+            try:
+                result = self.ollama_service.extract_key_points(content)
+            finally:
+                signal.alarm(0)  # Отменяем таймаут
+            
+            if result.get("success", False):
+                key_points_result = result.get("key_points_result", {})
+                
+                # Сохраняем ключевые моменты в документ
+                document.key_points = key_points_result.get("key_points", [])
+                document.key_points_generated_date = self.timezone.now()
+                document.save()
+                
+                return {
+                    "success": True,
+                    "key_points": key_points_result.get("key_points", []),
+                    "summary": key_points_result.get("summary", ""),
+                    "main_topics": key_points_result.get("main_topics", [])
+                }
+            else:
+                raise Exception(result.get("error", "Неизвестная ошибка при генерации"))
+                
+        except Exception as e:
+            logger.error(f"Ошибка при генерации ключевых моментов для документа {document.id}: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e)
+            }

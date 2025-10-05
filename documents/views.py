@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from .models import Document
 from .forms import DocumentUploadForm, DocumentVersionUploadForm, DocumentRenameForm
-from .services import DocumentParserService, DocumentValidationService
+from .services import DocumentParserService, DocumentValidationService, DocumentKeyPointsService
 import logging
 import json
 
@@ -667,4 +667,134 @@ class DocumentVersionBulkDeleteView(LoginRequiredMixin, View):
             return JsonResponse({
                 'success': False,
                 'message': 'Ошибка при удалении версий документов'
+            }, status=500)
+
+
+class DocumentGenerateKeyPointsView(LoginRequiredMixin, View):
+    """
+    Генерация ключевых моментов документа
+    """
+    
+    def get_queryset(self):
+        return Document.objects.filter(user=self.request.user)
+    
+    def post(self, request, pk):
+        """
+        POST запрос для генерации ключевых моментов
+        """
+        try:
+            document = get_object_or_404(self.get_queryset(), pk=pk)
+            
+            # Проверяем, что документ обработан
+            if document.status != 'processed':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Документ должен быть обработан перед генерацией ключевых моментов'
+                }, status=400)
+            
+            # Проверяем, что есть содержимое
+            if not document.has_content():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Документ не содержит извлеченного содержимого'
+                }, status=400)
+            
+            # Генерируем ключевые моменты
+            key_points_service = DocumentKeyPointsService()
+            result = key_points_service.generate_key_points(document)
+            
+            if result['success']:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Ключевые моменты успешно сгенерированы',
+                    'key_points_count': len(result.get('key_points', []))
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': result.get('error', 'Неизвестная ошибка при генерации')
+                }, status=500)
+                
+        except Document.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Документ не найден'
+            }, status=404)
+        except Exception as e:
+            logger.error(f"Ошибка при генерации ключевых моментов для документа {pk}: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Внутренняя ошибка сервера'
+            }, status=500)
+
+
+class DocumentTestKeyPointsView(LoginRequiredMixin, View):
+    """
+    Тестовый endpoint для отладки генерации ключевых моментов
+    """
+    
+    def get_queryset(self):
+        return Document.objects.filter(user=self.request.user)
+    
+    def get(self, request, pk):
+        """
+        GET запрос для тестирования генерации ключевых моментов
+        """
+        try:
+            document = get_object_or_404(self.get_queryset(), pk=pk)
+            
+            # Проверяем статус документа
+            status_info = {
+                'document_id': document.id,
+                'document_title': document.title,
+                'document_status': document.status,
+                'has_content': document.has_content(),
+                'content_length': len(document.get_content_text()) if document.has_content() else 0,
+                'has_key_points': document.has_key_points(),
+                'key_points_generated_date': document.key_points_generated_date
+            }
+            
+            # Тестируем Ollama
+            from analysis.ollama_service import OllamaService
+            from settings.models import ApplicationSettings
+            
+            settings = ApplicationSettings.get_settings()
+            model = settings.default_neural_network_model or 'llama3'
+            
+            ollama_service = OllamaService(model=model)
+            ollama_available = ollama_service.is_available()
+            available_models = ollama_service.get_available_models() if ollama_available else []
+            
+            ollama_info = {
+                'available': ollama_available,
+                'current_model': model,
+                'available_models': available_models
+            }
+            
+            # Простой тест генерации
+            test_result = None
+            if ollama_available and document.has_content():
+                try:
+                    test_content = document.get_content_text()[:500]  # Первые 500 символов
+                    test_result = ollama_service.extract_key_points(test_content)
+                except Exception as e:
+                    test_result = {'success': False, 'error': str(e)}
+            
+            return JsonResponse({
+                'success': True,
+                'status_info': status_info,
+                'ollama_info': ollama_info,
+                'test_result': test_result
+            })
+                
+        except Document.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Документ не найден'
+            }, status=404)
+        except Exception as e:
+            logger.error(f"Ошибка при тестировании генерации ключевых моментов для документа {pk}: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Внутренняя ошибка сервера: {str(e)}'
             }, status=500)
