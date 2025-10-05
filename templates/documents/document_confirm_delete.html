@@ -27,7 +27,7 @@
                 <form method="post" class="mt-4">
                     {% csrf_token %}
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{% url 'documents:detail' document.pk %}" class="btn btn-secondary me-md-2">
+                        <a href="{% url 'documents:detail' document.get_latest_version.pk %}" class="btn btn-secondary me-md-2">
                             Отмена
                         </a>
                         <button type="submit" class="btn btn-danger">

@@ -31,6 +31,7 @@ urlpatterns = [
     path('analysis/', include('analysis.urls')),
     path('reports/', include('reports.urls')),
     path('users/', include('users.urls')),
+    path('auth/microsoft/sso/', include('settings.microsoft_ad_urls')),
 ]
 
 # Обслуживание медиа файлов в режиме разработки

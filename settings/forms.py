@@ -39,6 +39,13 @@ class ApplicationSettingsForm(forms.ModelForm):
             'microsoft_ad_sso_redirect_uri',
             'microsoft_ad_sso_scope',
             'microsoft_ad_sso_domain',
+            'microsoft_ad_sso_directory_service',
+            'microsoft_ad_sso_directory_url',
+            'microsoft_ad_sso_realm',
+            'microsoft_ad_sso_issuer',
+            'microsoft_ad_sso_metadata_url',
+            'microsoft_ad_sso_certificate_thumbprint',
+            'microsoft_ad_sso_saml_enabled',
         ]
         widgets = {
             'app_name': forms.TextInput(attrs={
@@ -146,6 +153,29 @@ class ApplicationSettingsForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'company.com'
             }),
+            'microsoft_ad_sso_directory_service': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'microsoft_ad_sso_directory_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://directory.company.com'
+            }),
+            'microsoft_ad_sso_realm': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'company.com'
+            }),
+            'microsoft_ad_sso_issuer': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://sts.company.com'
+            }),
+            'microsoft_ad_sso_metadata_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://directory.company.com/federationmetadata/2007-06/federationmetadata.xml'
+            }),
+            'microsoft_ad_sso_certificate_thumbprint': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'A1B2C3D4E5F6...'
+            }),
             'default_neural_network_model': forms.Select(attrs={
                 'class': 'form-control'
             }),
@@ -160,6 +190,7 @@ class ApplicationSettingsForm(forms.ModelForm):
         self.fields['email_notifications_enabled'].widget.attrs.update({'class': 'form-check-input'})
         self.fields['microsoft_graph_enabled'].widget.attrs.update({'class': 'form-check-input'})
         self.fields['microsoft_ad_sso_enabled'].widget.attrs.update({'class': 'form-check-input'})
+        self.fields['microsoft_ad_sso_saml_enabled'].widget.attrs.update({'class': 'form-check-input'})
         
         # Получаем доступные модели нейросетей для выбора
         from analysis.ollama_service import OllamaService
@@ -363,6 +394,49 @@ class ApplicationSettingsForm(forms.ModelForm):
                 raise ValidationError('Домен должен содержать точку (например: company.com)')
         return domain
     
+    def clean_microsoft_ad_sso_directory_url(self):
+        """Валидация URL службы каталогов"""
+        url = self.cleaned_data['microsoft_ad_sso_directory_url']
+        if url:
+            if not url.startswith(('http://', 'https://')):
+                raise ValidationError('URL должен начинаться с http:// или https://')
+        return url
+    
+    def clean_microsoft_ad_sso_realm(self):
+        """Валидация области (Realm)"""
+        realm = self.cleaned_data['microsoft_ad_sso_realm']
+        if realm:
+            if '.' not in realm:
+                raise ValidationError('Область должна содержать точку (например: company.com)')
+        return realm
+    
+    def clean_microsoft_ad_sso_issuer(self):
+        """Валидация издателя (Issuer)"""
+        issuer = self.cleaned_data['microsoft_ad_sso_issuer']
+        if issuer:
+            if not issuer.startswith(('http://', 'https://')):
+                raise ValidationError('URL издателя должен начинаться с http:// или https://')
+        return issuer
+    
+    def clean_microsoft_ad_sso_metadata_url(self):
+        """Валидация URL метаданных"""
+        metadata_url = self.cleaned_data['microsoft_ad_sso_metadata_url']
+        if metadata_url:
+            if not metadata_url.startswith(('http://', 'https://')):
+                raise ValidationError('URL метаданных должен начинаться с http:// или https://')
+            if not metadata_url.endswith(('.xml', '/federationmetadata.xml')):
+                raise ValidationError('URL метаданных должен указывать на XML файл')
+        return metadata_url
+    
+    def clean_microsoft_ad_sso_certificate_thumbprint(self):
+        """Валидация отпечатка сертификата"""
+        thumbprint = self.cleaned_data['microsoft_ad_sso_certificate_thumbprint']
+        if thumbprint:
+            import re
+            if not re.match(r'^[0-9A-Fa-f]{40}$', thumbprint):
+                raise ValidationError('Отпечаток сертификата должен содержать 40 шестнадцатеричных символов')
+        return thumbprint
+    
     def clean(self):
         """Общая валидация формы"""
         cleaned_data = super().clean()
@@ -392,6 +466,10 @@ class ApplicationSettingsForm(forms.ModelForm):
         # Проверяем настройки Microsoft Active Directory SSO
         microsoft_ad_sso_enabled = cleaned_data.get('microsoft_ad_sso_enabled')
         if microsoft_ad_sso_enabled:
+            directory_service = cleaned_data.get('microsoft_ad_sso_directory_service', 'azure_ad')
+            saml_enabled = cleaned_data.get('microsoft_ad_sso_saml_enabled', False)
+            
+            # Базовые обязательные поля
             required_fields = [
                 'microsoft_ad_sso_tenant_id',
                 'microsoft_ad_sso_client_id', 
@@ -399,6 +477,20 @@ class ApplicationSettingsForm(forms.ModelForm):
                 'microsoft_ad_sso_redirect_uri',
                 'microsoft_ad_sso_domain'
             ]
+            
+            # Дополнительные поля для SAML
+            if saml_enabled:
+                required_fields.extend([
+                    'microsoft_ad_sso_issuer',
+                    'microsoft_ad_sso_metadata_url'
+                ])
+            
+            # Дополнительные поля для локального AD
+            if directory_service == 'on_premises_ad':
+                required_fields.extend([
+                    'microsoft_ad_sso_directory_url',
+                    'microsoft_ad_sso_realm'
+                ])
             
             for field_name in required_fields:
                 field_value = cleaned_data.get(field_name)

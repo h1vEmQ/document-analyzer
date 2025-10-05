@@ -33,6 +33,10 @@ class WARAAdminSite(AdminSite):
         # Добавляем URL для Microsoft Graph
         from .microsoft_urls import urlpatterns as microsoft_urls
         custom_urls.extend(microsoft_urls)
+        
+        # Добавляем URL для Microsoft AD SSO
+        from .microsoft_ad_urls import urlpatterns as microsoft_ad_urls
+        custom_urls.extend(microsoft_ad_urls)
         return custom_urls + urls
     
     @staff_member_required

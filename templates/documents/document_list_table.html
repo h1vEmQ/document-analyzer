@@ -115,7 +115,7 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{% url 'documents:detail' document.pk %}" 
+                                                <a href="{% url 'documents:detail' document.get_latest_version.pk %}" 
                                                    class="btn btn-outline-primary" 
                                                    title="Просмотр">
                                                     <i class="fas fa-eye"></i>

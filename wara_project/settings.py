@@ -147,6 +147,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Кастомная модель пользователя
 AUTH_USER_MODEL = 'users.User'
 
+# Настройки аутентификации
+AUTHENTICATION_BACKENDS = [
+    'settings.microsoft_ad_service.MicrosoftADAuthBackend',  # Microsoft AD SSO
+    'django.contrib.auth.backends.ModelBackend',  # Стандартная аутентификация Django
+]
+
 # URL-адреса для аутентификации
 LOGIN_URL = '/users/login/'
 LOGIN_REDIRECT_URL = '/'

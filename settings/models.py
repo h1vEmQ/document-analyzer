@@ -162,6 +162,45 @@ class ApplicationSettings(models.Model):
         verbose_name='Домен Active Directory'
     )
     
+    # Настройки службы каталогов
+    microsoft_ad_sso_directory_service = models.CharField(
+        max_length=100,
+        choices=[
+            ('azure_ad', 'Azure Active Directory'),
+            ('adfs', 'Active Directory Federation Services (ADFS)'),
+            ('on_premises_ad', 'Локальный Active Directory'),
+            ('hybrid_ad', 'Гибридная среда AD'),
+        ],
+        default='azure_ad',
+        verbose_name='Тип службы каталогов'
+    )
+    microsoft_ad_sso_directory_url = models.URLField(
+        blank=True,
+        verbose_name='URL службы каталогов'
+    )
+    microsoft_ad_sso_realm = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='Область (Realm)'
+    )
+    microsoft_ad_sso_issuer = models.URLField(
+        blank=True,
+        verbose_name='Издатель (Issuer)'
+    )
+    microsoft_ad_sso_metadata_url = models.URLField(
+        blank=True,
+        verbose_name='URL метаданных'
+    )
+    microsoft_ad_sso_certificate_thumbprint = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Отпечаток сертификата'
+    )
+    microsoft_ad_sso_saml_enabled = models.BooleanField(
+        default=False,
+        verbose_name='Использовать SAML'
+    )
+    
     # Мета-информация
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Обновлено')
@@ -217,6 +256,13 @@ class ApplicationSettings(models.Model):
                 'microsoft_ad_sso_redirect_uri': 'http://localhost:8000/auth/microsoft/sso/callback/',
                 'microsoft_ad_sso_scope': 'https://graph.microsoft.com/User.Read https://graph.microsoft.com/Group.Read.All',
                 'microsoft_ad_sso_domain': '',
+                'microsoft_ad_sso_directory_service': 'azure_ad',
+                'microsoft_ad_sso_directory_url': '',
+                'microsoft_ad_sso_realm': '',
+                'microsoft_ad_sso_issuer': '',
+                'microsoft_ad_sso_metadata_url': '',
+                'microsoft_ad_sso_certificate_thumbprint': '',
+                'microsoft_ad_sso_saml_enabled': False,
             }
         )
         return settings

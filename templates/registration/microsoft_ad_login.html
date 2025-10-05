@@ -1,0 +1,168 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Вход через Microsoft Active Directory{% endblock %}
+
+{% block extra_css %}
+<style>
+    .microsoft-ad-login-container {
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .microsoft-ad-logo {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2em;
+        font-weight: bold;
+    }
+    
+    .microsoft-ad-title {
+        color: #323130;
+        margin-bottom: 10px;
+        font-size: 1.5em;
+        font-weight: 600;
+    }
+    
+    .microsoft-ad-subtitle {
+        color: #605e5c;
+        margin-bottom: 30px;
+        font-size: 1em;
+    }
+    
+    .microsoft-ad-login-btn {
+        background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        padding: 15px 30px;
+        font-size: 1.1em;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+    
+    .microsoft-ad-login-btn:hover {
+        background: linear-gradient(135deg, #106ebe 0%, #005a9e 100%);
+        color: white;
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,120,212,0.3);
+    }
+    
+    .microsoft-ad-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: left;
+    }
+    
+    .microsoft-ad-info h6 {
+        color: #323130;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+    
+    .microsoft-ad-info ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #605e5c;
+    }
+    
+    .microsoft-ad-info li {
+        margin-bottom: 5px;
+    }
+    
+    .back-to-login {
+        color: #0078d4;
+        text-decoration: none;
+        font-size: 0.9em;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 20px;
+    }
+    
+    .back-to-login:hover {
+        color: #106ebe;
+        text-decoration: underline;
+    }
+    
+    .microsoft-ad-domain {
+        background: #e1f5fe;
+        border: 1px solid #81d4fa;
+        border-radius: 6px;
+        padding: 10px;
+        margin: 15px 0;
+        color: #0277bd;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="microsoft-ad-login-container">
+        <div class="microsoft-ad-logo">
+            <i class="fab fa-microsoft"></i>
+        </div>
+        
+        <h2 class="microsoft-ad-title">Вход через Microsoft Active Directory</h2>
+        <p class="microsoft-ad-subtitle">Авторизуйтесь с помощью корпоративной учетной записи</p>
+        
+        {% if domain %}
+        <div class="microsoft-ad-domain">
+            <i class="fas fa-building"></i>
+            Домен: <strong>{{ domain }}</strong>
+        </div>
+        {% endif %}
+        
+        <a href="{% url 'microsoft_ad:login' %}" class="microsoft-ad-login-btn">
+            <i class="fab fa-microsoft"></i>
+            Войти через Microsoft AD
+        </a>
+        
+        <div class="microsoft-ad-info">
+            <h6><i class="fas fa-info-circle"></i> Информация о входе</h6>
+            <ul>
+                <li>Используйте корпоративную учетную запись Microsoft</li>
+                <li>Убедитесь, что ваш email принадлежит домену <strong>{{ domain|default:"организации" }}</strong></li>
+                <li>При первом входе будет создан аккаунт в системе</li>
+                <li>Ваши данные будут синхронизированы с Active Directory</li>
+            </ul>
+        </div>
+        
+        <a href="{% url 'users:login' %}" class="back-to-login">
+            <i class="fas fa-arrow-left"></i>
+            Вернуться к обычному входу
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Автоматически перенаправляем на вход через AD SSO
+    // Раскомментируйте следующую строку для автоматического перенаправления
+    // window.location.href = "{% url 'microsoft_ad:login' %}";
+});
+</script>
+{% endblock %}

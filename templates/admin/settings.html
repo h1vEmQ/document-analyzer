@@ -680,6 +680,63 @@ document.addEventListener('DOMContentLoaded', function() {
                                    value="{{ settings.microsoft_ad_sso_domain }}" placeholder="company.com">
                             <div class="help-text">Домен организации для проверки пользователей</div>
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_directory_service">Тип службы каталогов</label>
+                            <select name="microsoft_ad_sso_directory_service" id="microsoft_ad_sso_directory_service" class="form-control">
+                                <option value="azure_ad" {% if settings.microsoft_ad_sso_directory_service == 'azure_ad' %}selected{% endif %}>Azure Active Directory</option>
+                                <option value="adfs" {% if settings.microsoft_ad_sso_directory_service == 'adfs' %}selected{% endif %}>Active Directory Federation Services (ADFS)</option>
+                                <option value="on_premises_ad" {% if settings.microsoft_ad_sso_directory_service == 'on_premises_ad' %}selected{% endif %}>Локальный Active Directory</option>
+                                <option value="hybrid_ad" {% if settings.microsoft_ad_sso_directory_service == 'hybrid_ad' %}selected{% endif %}>Гибридная среда AD</option>
+                            </select>
+                            <div class="help-text">Выберите тип используемой службы каталогов</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_directory_url">URL службы каталогов</label>
+                            <input type="url" name="microsoft_ad_sso_directory_url" id="microsoft_ad_sso_directory_url" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_directory_url }}" placeholder="https://directory.company.com">
+                            <div class="help-text">URL службы каталогов (для локального AD)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_realm">Область (Realm)</label>
+                            <input type="text" name="microsoft_ad_sso_realm" id="microsoft_ad_sso_realm" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_realm }}" placeholder="company.com">
+                            <div class="help-text">Область для федеративной аутентификации</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_issuer">Издатель (Issuer)</label>
+                            <input type="url" name="microsoft_ad_sso_issuer" id="microsoft_ad_sso_issuer" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_issuer }}" placeholder="https://sts.company.com">
+                            <div class="help-text">URL издателя токенов (для SAML)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_metadata_url">URL метаданных</label>
+                            <input type="url" name="microsoft_ad_sso_metadata_url" id="microsoft_ad_sso_metadata_url" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_metadata_url }}" placeholder="https://directory.company.com/federationmetadata/2007-06/federationmetadata.xml">
+                            <div class="help-text">URL метаданных федерации (для SAML)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_certificate_thumbprint">Отпечаток сертификата</label>
+                            <input type="text" name="microsoft_ad_sso_certificate_thumbprint" id="microsoft_ad_sso_certificate_thumbprint" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_certificate_thumbprint }}" placeholder="A1B2C3D4E5F6...">
+                            <div class="help-text">40-символьный отпечаток сертификата (для SAML)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input type="checkbox" name="microsoft_ad_sso_saml_enabled" id="microsoft_ad_sso_saml_enabled" class="form-check-input" 
+                                       {% if settings.microsoft_ad_sso_saml_enabled %}checked{% endif %}>
+                                <label for="microsoft_ad_sso_saml_enabled" class="form-check-label">
+                                    Использовать SAML протокол
+                                </label>
+                            </div>
+                            <div class="help-text">Включить поддержку SAML для федеративной аутентификации</div>
+                        </div>
                     </div>
                     
                     <!-- Кнопки управления Microsoft AD SSO -->
@@ -760,6 +817,13 @@ function resetToDefaults() {
         document.getElementById('microsoft_ad_sso_redirect_uri').value = 'http://localhost:8000/auth/microsoft/sso/callback/';
         document.getElementById('microsoft_ad_sso_scope').value = 'https://graph.microsoft.com/User.Read https://graph.microsoft.com/Group.Read.All';
         document.getElementById('microsoft_ad_sso_domain').value = '';
+        document.getElementById('microsoft_ad_sso_directory_service').value = 'azure_ad';
+        document.getElementById('microsoft_ad_sso_directory_url').value = '';
+        document.getElementById('microsoft_ad_sso_realm').value = '';
+        document.getElementById('microsoft_ad_sso_issuer').value = '';
+        document.getElementById('microsoft_ad_sso_metadata_url').value = '';
+        document.getElementById('microsoft_ad_sso_certificate_thumbprint').value = '';
+        document.getElementById('microsoft_ad_sso_saml_enabled').checked = false;
         
         // Скрыть настройки Microsoft Graph
         document.getElementById('microsoft-settings-group').style.display = 'none';
@@ -799,10 +863,150 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // Обработчик для типа службы каталогов
+        const directoryServiceSelect = document.getElementById('microsoft_ad_sso_directory_service');
+        if (directoryServiceSelect) {
+            directoryServiceSelect.addEventListener('change', function() {
+                toggleDirectoryServiceFields();
+            });
+            // Инициализируем при загрузке
+            toggleDirectoryServiceFields();
+        }
+        
         // Проверяем статус авторизации Microsoft Graph
         checkMicrosoftAuthStatus();
     }
+    
+    // Обработчики для кнопок Microsoft AD SSO
+    const microsoftAdSsoAuthBtn = document.getElementById('microsoft-ad-sso-auth-btn');
+    const microsoftAdSsoTestBtn = document.getElementById('microsoft-ad-sso-test-btn');
+    const microsoftAdSsoDisableBtn = document.getElementById('microsoft-ad-sso-disable-btn');
+    
+    if (microsoftAdSsoAuthBtn) {
+        microsoftAdSsoAuthBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Перенаправляем на страницу входа через AD SSO
+            window.location.href = "{% url 'microsoft_ad:login_page' %}";
+        });
+    }
+    
+    if (microsoftAdSsoTestBtn) {
+        microsoftAdSsoTestBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Тестируем соединение
+            fetch("{% url 'microsoft_ad:test' %}")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Соединение с Microsoft AD SSO успешно!');
+                    } else {
+                        alert('Ошибка соединения: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Ошибка тестирования: ' + error.message);
+                });
+        });
+    }
+    
+    if (microsoftAdSsoDisableBtn) {
+        microsoftAdSsoDisableBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Вы уверены, что хотите отключить Microsoft AD SSO?')) {
+                window.location.href = "{% url 'microsoft_ad:disable' %}";
+            }
+        });
+    }
 });
+
+// Функция для переключения полей в зависимости от типа службы каталогов
+function toggleDirectoryServiceFields() {
+    const directoryService = document.getElementById('microsoft_ad_sso_directory_service').value;
+    const directoryUrlField = document.getElementById('microsoft_ad_sso_directory_url');
+    const realmField = document.getElementById('microsoft_ad_sso_realm');
+    const issuerField = document.getElementById('microsoft_ad_sso_issuer');
+    const metadataUrlField = document.getElementById('microsoft_ad_sso_metadata_url');
+    const certificateField = document.getElementById('microsoft_ad_sso_certificate_thumbprint');
+    const samlCheckbox = document.getElementById('microsoft_ad_sso_saml_enabled');
+    
+    // Скрываем все дополнительные поля
+    if (directoryUrlField) {
+        directoryUrlField.closest('.form-group').style.display = 'none';
+    }
+    if (realmField) {
+        realmField.closest('.form-group').style.display = 'none';
+    }
+    if (issuerField) {
+        issuerField.closest('.form-group').style.display = 'none';
+    }
+    if (metadataUrlField) {
+        metadataUrlField.closest('.form-group').style.display = 'none';
+    }
+    if (certificateField) {
+        certificateField.closest('.form-group').style.display = 'none';
+    }
+    if (samlCheckbox) {
+        samlCheckbox.closest('.form-group').style.display = 'none';
+    }
+    
+    // Показываем поля в зависимости от типа службы
+    switch (directoryService) {
+        case 'azure_ad':
+            // Для Azure AD показываем только SAML опции
+            if (samlCheckbox) {
+                samlCheckbox.closest('.form-group').style.display = 'block';
+            }
+            break;
+            
+        case 'adfs':
+            // Для ADFS показываем SAML и связанные поля
+            if (samlCheckbox) {
+                samlCheckbox.closest('.form-group').style.display = 'block';
+            }
+            if (issuerField) {
+                issuerField.closest('.form-group').style.display = 'block';
+            }
+            if (metadataUrlField) {
+                metadataUrlField.closest('.form-group').style.display = 'block';
+            }
+            if (certificateField) {
+                certificateField.closest('.form-group').style.display = 'block';
+            }
+            break;
+            
+        case 'on_premises_ad':
+            // Для локального AD показываем URL и realm
+            if (directoryUrlField) {
+                directoryUrlField.closest('.form-group').style.display = 'block';
+            }
+            if (realmField) {
+                realmField.closest('.form-group').style.display = 'block';
+            }
+            break;
+            
+        case 'hybrid_ad':
+            // Для гибридной среды показываем все поля
+            if (directoryUrlField) {
+                directoryUrlField.closest('.form-group').style.display = 'block';
+            }
+            if (realmField) {
+                realmField.closest('.form-group').style.display = 'block';
+            }
+            if (samlCheckbox) {
+                samlCheckbox.closest('.form-group').style.display = 'block';
+            }
+            if (issuerField) {
+                issuerField.closest('.form-group').style.display = 'block';
+            }
+            if (metadataUrlField) {
+                metadataUrlField.closest('.form-group').style.display = 'block';
+            }
+            if (certificateField) {
+                certificateField.closest('.form-group').style.display = 'block';
+            }
+            break;
+    }
+}
 
 // Функция для проверки статуса авторизации Microsoft Graph
 function checkMicrosoftAuthStatus() {

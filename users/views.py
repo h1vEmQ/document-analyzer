@@ -18,6 +18,22 @@ class CustomLoginView(LoginView):
     
     def get_success_url(self):
         return reverse_lazy('documents:list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Проверяем настройки Microsoft AD SSO
+        try:
+            from settings.models import ApplicationSettings
+            settings_obj = ApplicationSettings.get_settings()
+            
+            context['microsoft_ad_enabled'] = settings_obj.microsoft_ad_sso_enabled
+            context['microsoft_ad_domain'] = settings_obj.microsoft_ad_sso_domain
+        except Exception:
+            context['microsoft_ad_enabled'] = False
+            context['microsoft_ad_domain'] = None
+        
+        return context
 
 
 class CustomLogoutView(LogoutView):

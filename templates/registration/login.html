@@ -47,6 +47,30 @@
             </div>
         </div>
         
+        <!-- Microsoft AD SSO Login -->
+        {% if microsoft_ad_enabled %}
+        <div class="card mt-3">
+            <div class="card-header text-center">
+                <h6 class="mb-0">
+                    <i class="fab fa-microsoft text-primary"></i>
+                    Вход через Microsoft Active Directory
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <p class="text-muted small mb-3">
+                    Используйте корпоративную учетную запись Microsoft
+                    {% if microsoft_ad_domain %}
+                    <br><strong>Домен: {{ microsoft_ad_domain }}</strong>
+                    {% endif %}
+                </p>
+                <a href="{% url 'microsoft_ad:login' %}" class="btn btn-outline-primary">
+                    <i class="fab fa-microsoft"></i>
+                    Войти через Microsoft AD
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        
         <div class="text-center mt-4">
             <div class="card">
                 <div class="card-body">
