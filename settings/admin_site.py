@@ -29,6 +29,10 @@ class WARAAdminSite(AdminSite):
             # path('server-health/', self.admin_view(self.server_health_view), name='server_health'),
             # path('server-metrics/', self.admin_view(self.server_metrics_view), name='server_metrics'),
         ]
+        
+        # Добавляем URL для Microsoft Graph
+        from .microsoft_urls import urlpatterns as microsoft_urls
+        custom_urls.extend(microsoft_urls)
         return custom_urls + urls
     
     @staff_member_required

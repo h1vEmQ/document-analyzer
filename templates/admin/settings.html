@@ -332,6 +332,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="settings-tab" data-target="security-settings">
                 <i class="fas fa-shield-alt"></i> Безопасность
             </div>
+            <div class="settings-tab" data-target="microsoft-settings">
+                <i class="fab fa-microsoft"></i> Microsoft
+            </div>
         </div>
         
         <!-- Основные настройки -->
@@ -514,6 +517,105 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
         
+        <!-- Настройки интеграции с Microsoft Graph -->
+        <div id="microsoft-settings" class="tab-content">
+            <div class="settings-section">
+                <div class="settings-header">
+                    <i class="fab fa-microsoft"></i>
+                    Интеграция с Microsoft Graph
+                </div>
+                <div class="settings-content">
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" name="microsoft_graph_enabled" id="microsoft_graph_enabled" class="form-check-input" 
+                                   {% if settings.microsoft_graph_enabled %}checked{% endif %}>
+                            <label for="microsoft_graph_enabled" class="form-check-label">
+                                Включить интеграцию с Microsoft Graph
+                            </label>
+                        </div>
+                        <div class="help-text">Позволяет работать с документами в SharePoint и OneDrive</div>
+                    </div>
+                    
+                    <div class="microsoft-settings-group" id="microsoft-settings-group" style="{% if not settings.microsoft_graph_enabled %}display: none;{% endif %}">
+                        <div class="form-group">
+                            <label for="microsoft_tenant_id">ID арендатора Microsoft (Tenant ID)</label>
+                            <input type="text" name="microsoft_tenant_id" id="microsoft_tenant_id" class="form-control" 
+                                   value="{{ settings.microsoft_tenant_id }}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                            <div class="help-text">GUID идентификатор арендатора Azure AD</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_client_id">ID клиента Microsoft (Client ID)</label>
+                            <input type="text" name="microsoft_client_id" id="microsoft_client_id" class="form-control" 
+                                   value="{{ settings.microsoft_client_id }}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                            <div class="help-text">GUID идентификатор приложения в Azure AD</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_client_secret">Секрет клиента Microsoft (Client Secret)</label>
+                            <input type="password" name="microsoft_client_secret" id="microsoft_client_secret" class="form-control" 
+                                   value="{{ settings.microsoft_client_secret }}" placeholder="Введите секрет клиента">
+                            <div class="help-text">Секретный ключ приложения из Azure AD</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_redirect_uri">URI перенаправления Microsoft</label>
+                            <input type="url" name="microsoft_redirect_uri" id="microsoft_redirect_uri" class="form-control" 
+                                   value="{{ settings.microsoft_redirect_uri }}" placeholder="https://yourdomain.com/auth/microsoft/callback/">
+                            <div class="help-text">URL для обработки ответа авторизации</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_scope">Области доступа Microsoft (Scope)</label>
+                            <textarea name="microsoft_scope" id="microsoft_scope" class="form-control" rows="3" 
+                                      placeholder="https://graph.microsoft.com/Files.Read https://graph.microsoft.com/Sites.Read.All">{{ settings.microsoft_scope }}</textarea>
+                            <div class="help-text">Список разрешений для доступа к Microsoft Graph API</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_site_id">ID сайта SharePoint</label>
+                            <input type="text" name="microsoft_site_id" id="microsoft_site_id" class="form-control" 
+                                   value="{{ settings.microsoft_site_id }}" placeholder="yourdomain.sharepoint.com,xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx,xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                            <div class="help-text">Идентификатор сайта SharePoint для доступа к документам</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_drive_id">ID диска SharePoint</label>
+                            <input type="text" name="microsoft_drive_id" id="microsoft_drive_id" class="form-control" 
+                                   value="{{ settings.microsoft_drive_id }}" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                            <div class="help-text">Идентификатор диска SharePoint (если отличается от основного)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_folder_path">Путь к папке в SharePoint</label>
+                            <input type="text" name="microsoft_folder_path" id="microsoft_folder_path" class="form-control" 
+                                   value="{{ settings.microsoft_folder_path }}" placeholder="/Documents">
+                        <div class="help-text">Путь к папке с документами в SharePoint</div>
+                    </div>
+                    
+                    <!-- Кнопки управления Microsoft Graph -->
+                    <div class="form-group">
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'admin:microsoft:auth_start' %}" class="btn btn-primary" id="microsoft-auth-btn">
+                                <i class="fab fa-microsoft"></i> Авторизоваться
+                            </a>
+                            <a href="{% url 'admin:microsoft:test' %}" class="btn btn-success" id="microsoft-test-btn">
+                                <i class="fas fa-check-circle"></i> Тестировать соединение
+                            </a>
+                            <a href="{% url 'admin:microsoft:disconnect' %}" class="btn btn-danger" id="microsoft-disconnect-btn" onclick="return confirm('Вы уверены, что хотите отключить авторизацию?')">
+                                <i class="fas fa-sign-out-alt"></i> Отключить
+                            </a>
+                        </div>
+                        <div class="help-text">
+                            Нажмите "Авторизоваться" для подключения к Microsoft Graph. 
+                            После авторизации вы сможете работать с документами в SharePoint.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        
         <!-- Кнопки действий -->
         <div class="settings-section">
             <div class="settings-content">
@@ -551,9 +653,70 @@ function resetToDefaults() {
         document.getElementById('session_timeout').value = '3600';
         document.getElementById('max_login_attempts').value = '5';
         
+        // Сброс настроек Microsoft Graph
+        document.getElementById('microsoft_graph_enabled').checked = false;
+        document.getElementById('microsoft_tenant_id').value = '';
+        document.getElementById('microsoft_client_id').value = '';
+        document.getElementById('microsoft_client_secret').value = '';
+        document.getElementById('microsoft_redirect_uri').value = 'http://localhost:8000/auth/microsoft/callback/';
+        document.getElementById('microsoft_scope').value = 'https://graph.microsoft.com/Files.Read https://graph.microsoft.com/Sites.Read.All';
+        document.getElementById('microsoft_site_id').value = '';
+        document.getElementById('microsoft_drive_id').value = '';
+        document.getElementById('microsoft_folder_path').value = '/Documents';
+        
+        // Скрыть настройки Microsoft Graph
+        document.getElementById('microsoft-settings-group').style.display = 'none';
+        
         // Переключение на первую вкладку
         document.querySelector('.settings-tab[data-target="basic-settings"]').click();
     }
+}
+
+// Обработчик для переключения настроек Microsoft Graph
+document.addEventListener('DOMContentLoaded', function() {
+    const microsoftGraphEnabled = document.getElementById('microsoft_graph_enabled');
+    const microsoftSettingsGroup = document.getElementById('microsoft-settings-group');
+    
+    if (microsoftGraphEnabled && microsoftSettingsGroup) {
+        microsoftGraphEnabled.addEventListener('change', function() {
+            if (this.checked) {
+                microsoftSettingsGroup.style.display = 'block';
+            } else {
+                microsoftSettingsGroup.style.display = 'none';
+            }
+        });
+        
+        // Проверяем статус авторизации Microsoft Graph
+        checkMicrosoftAuthStatus();
+    }
+});
+
+// Функция для проверки статуса авторизации Microsoft Graph
+function checkMicrosoftAuthStatus() {
+    fetch('{% url "admin:microsoft:auth_status" %}')
+        .then(response => response.json())
+        .then(data => {
+            const authBtn = document.getElementById('microsoft-auth-btn');
+            const testBtn = document.getElementById('microsoft-test-btn');
+            const disconnectBtn = document.getElementById('microsoft-disconnect-btn');
+            
+            if (data.success && data.authorized) {
+                // Пользователь авторизован
+                authBtn.innerHTML = '<i class="fas fa-check-circle"></i> Авторизован';
+                authBtn.className = 'btn btn-success';
+                testBtn.style.display = 'inline-block';
+                disconnectBtn.style.display = 'inline-block';
+            } else {
+                // Пользователь не авторизован
+                authBtn.innerHTML = '<i class="fab fa-microsoft"></i> Авторизоваться';
+                authBtn.className = 'btn btn-primary';
+                testBtn.style.display = 'none';
+                disconnectBtn.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка проверки статуса авторизации:', error);
+        });
 }
 </script>
 {% endblock %}

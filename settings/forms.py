@@ -15,6 +15,7 @@ class ApplicationSettingsForm(forms.ModelForm):
             'allowed_file_types',
             'auto_analysis_enabled',
             'analysis_timeout',
+            'default_neural_network_model',
             'auto_reports_enabled',
             'default_report_format',
             'items_per_page',
@@ -22,6 +23,15 @@ class ApplicationSettingsForm(forms.ModelForm):
             'notification_email',
             'session_timeout',
             'max_login_attempts',
+            'microsoft_graph_enabled',
+            'microsoft_tenant_id',
+            'microsoft_client_id',
+            'microsoft_client_secret',
+            'microsoft_redirect_uri',
+            'microsoft_scope',
+            'microsoft_site_id',
+            'microsoft_drive_id',
+            'microsoft_folder_path',
         ]
         widgets = {
             'app_name': forms.TextInput(attrs={
@@ -69,6 +79,43 @@ class ApplicationSettingsForm(forms.ModelForm):
                 'min': '1',
                 'max': '10'
             }),
+            'microsoft_tenant_id': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+            }),
+            'microsoft_client_id': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+            }),
+            'microsoft_client_secret': forms.TextInput(attrs={
+                'class': 'form-control',
+                'type': 'password',
+                'placeholder': 'Введите секрет клиента'
+            }),
+            'microsoft_redirect_uri': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://yourdomain.com/auth/microsoft/callback/'
+            }),
+            'microsoft_scope': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'https://graph.microsoft.com/Files.Read https://graph.microsoft.com/Sites.Read.All'
+            }),
+            'microsoft_site_id': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'yourdomain.sharepoint.com,xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx,xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+            }),
+            'microsoft_drive_id': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+            }),
+            'microsoft_folder_path': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '/Documents'
+            }),
+            'default_neural_network_model': forms.Select(attrs={
+                'class': 'form-control'
+            }),
         }
     
     def __init__(self, *args, **kwargs):
@@ -78,6 +125,36 @@ class ApplicationSettingsForm(forms.ModelForm):
         self.fields['auto_analysis_enabled'].widget.attrs.update({'class': 'form-check-input'})
         self.fields['auto_reports_enabled'].widget.attrs.update({'class': 'form-check-input'})
         self.fields['email_notifications_enabled'].widget.attrs.update({'class': 'form-check-input'})
+        self.fields['microsoft_graph_enabled'].widget.attrs.update({'class': 'form-check-input'})
+        
+        # Получаем доступные модели нейросетей для выбора
+        from analysis.ollama_service import OllamaService
+        try:
+            ollama_service = OllamaService()
+            available_models = ollama_service.get_available_models()
+            if available_models:
+                model_choices = [(model, f"{model} ({ollama_service.get_model_display_name(model)})") for model in available_models]
+                self.fields['default_neural_network_model'] = forms.ChoiceField(
+                    choices=model_choices,
+                    required=True,
+                    widget=forms.Select(attrs={'class': 'form-control'}),
+                    help_text='Выберите модель нейросети по умолчанию для анализа документов'
+                )
+            else:
+                self.fields['default_neural_network_model'] = forms.ChoiceField(
+                    choices=[('llama3', 'llama3 (по умолчанию)')],
+                    required=True,
+                    widget=forms.Select(attrs={'class': 'form-control'}),
+                    help_text='Модели не установлены. Установите модели в Ollama для использования анализа нейросетью'
+                )
+        except Exception:
+            # Если Ollama недоступен, используем значение по умолчанию
+            self.fields['default_neural_network_model'] = forms.ChoiceField(
+                choices=[('llama3', 'llama3 (по умолчанию)')],
+                required=True,
+                widget=forms.Select(attrs={'class': 'form-control'}),
+                help_text='Ollama недоступен. Установите и запустите Ollama для использования анализа нейросетью'
+            )
     
     def clean_max_file_size(self):
         """Валидация максимального размера файла"""
@@ -156,6 +233,56 @@ class ApplicationSettingsForm(forms.ModelForm):
         
         return email
     
+    def clean_microsoft_tenant_id(self):
+        """Валидация ID арендатора Microsoft"""
+        tenant_id = self.cleaned_data['microsoft_tenant_id']
+        if tenant_id:
+            import re
+            # Проверяем формат GUID
+            if not re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', tenant_id):
+                raise ValidationError('ID арендатора должен быть в формате GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
+        return tenant_id
+    
+    def clean_microsoft_client_id(self):
+        """Валидация ID клиента Microsoft"""
+        client_id = self.cleaned_data['microsoft_client_id']
+        if client_id:
+            import re
+            # Проверяем формат GUID
+            if not re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', client_id):
+                raise ValidationError('ID клиента должен быть в формате GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
+        return client_id
+    
+    def clean_microsoft_redirect_uri(self):
+        """Валидация URI перенаправления Microsoft"""
+        redirect_uri = self.cleaned_data['microsoft_redirect_uri']
+        if redirect_uri:
+            if not redirect_uri.startswith(('http://', 'https://')):
+                raise ValidationError('URI перенаправления должен начинаться с http:// или https://')
+            if not redirect_uri.endswith('/'):
+                raise ValidationError('URI перенаправления должен заканчиваться символом "/"')
+        return redirect_uri
+    
+    def clean_microsoft_scope(self):
+        """Валидация областей доступа Microsoft"""
+        scope = self.cleaned_data['microsoft_scope']
+        if scope:
+            # Проверяем, что указаны основные области доступа
+            required_scopes = ['https://graph.microsoft.com/Files.Read']
+            scope_list = scope.split()
+            for required_scope in required_scopes:
+                if required_scope not in scope_list:
+                    raise ValidationError(f'Необходимо указать область доступа: {required_scope}')
+        return scope
+    
+    def clean_microsoft_folder_path(self):
+        """Валидация пути к папке в SharePoint"""
+        folder_path = self.cleaned_data['microsoft_folder_path']
+        if folder_path:
+            if not folder_path.startswith('/'):
+                raise ValidationError('Путь к папке должен начинаться с символа "/"')
+        return folder_path
+    
     def clean(self):
         """Общая валидация формы"""
         cleaned_data = super().clean()
@@ -166,6 +293,21 @@ class ApplicationSettingsForm(forms.ModelForm):
         
         if email_notifications_enabled and not notification_email:
             self.add_error('notification_email', 'Необходимо указать email для уведомлений')
+        
+        # Проверяем настройки Microsoft Graph
+        microsoft_graph_enabled = cleaned_data.get('microsoft_graph_enabled')
+        if microsoft_graph_enabled:
+            required_fields = [
+                'microsoft_tenant_id',
+                'microsoft_client_id', 
+                'microsoft_client_secret',
+                'microsoft_redirect_uri'
+            ]
+            
+            for field_name in required_fields:
+                field_value = cleaned_data.get(field_name)
+                if not field_value:
+                    self.add_error(field_name, f'Поле обязательно при включенной интеграции с Microsoft Graph')
         
         return cleaned_data
 

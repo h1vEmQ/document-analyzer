@@ -12,3 +12,6 @@ requests==2.31.0
 celery==5.3.4
 redis==5.0.1
 PyPDF2==3.0.1
+msal==1.30.0
+msgraph-core==0.2.2
+msgraph-sdk==1.0.0

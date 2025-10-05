@@ -57,6 +57,17 @@ class ComparisonDetailView(LoginRequiredMixin, DetailView):
     
     def get_queryset(self):
         return Comparison.objects.filter(user=self.request.user)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        comparison = self.get_object()
+        
+        # Получаем отчеты, связанные с этим сравнением
+        reports = comparison.reports.filter(status='ready').order_by('-generated_date')
+        context['reports'] = reports
+        context['latest_report'] = reports.first() if reports.exists() else None
+        
+        return context
 
 
 class ComparisonCreateView(LoginRequiredMixin, CreateView):

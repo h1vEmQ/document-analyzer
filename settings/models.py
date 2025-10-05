@@ -81,6 +81,52 @@ class ApplicationSettings(models.Model):
         verbose_name='Максимальное количество попыток входа'
     )
     
+    # Настройки интеграции с Microsoft Graph
+    microsoft_graph_enabled = models.BooleanField(
+        default=False,
+        verbose_name='Интеграция с Microsoft Graph включена'
+    )
+    microsoft_tenant_id = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='ID арендатора Microsoft (Tenant ID)'
+    )
+    microsoft_client_id = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='ID клиента Microsoft (Client ID)'
+    )
+    microsoft_client_secret = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name='Секрет клиента Microsoft (Client Secret)'
+    )
+    microsoft_redirect_uri = models.URLField(
+        blank=True,
+        default='http://localhost:8000/auth/microsoft/callback/',
+        verbose_name='URI перенаправления Microsoft'
+    )
+    microsoft_scope = models.TextField(
+        default='https://graph.microsoft.com/Files.Read https://graph.microsoft.com/Sites.Read.All',
+        verbose_name='Области доступа Microsoft (Scope)'
+    )
+    microsoft_site_id = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='ID сайта SharePoint'
+    )
+    microsoft_drive_id = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='ID диска SharePoint'
+    )
+    microsoft_folder_path = models.CharField(
+        max_length=500,
+        blank=True,
+        default='/Documents',
+        verbose_name='Путь к папке в SharePoint'
+    )
+    
     # Мета-информация
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Обновлено')
@@ -120,9 +166,64 @@ class ApplicationSettings(models.Model):
                 'app_description': 'Система анализа документов',
                 'items_per_page': 10,
                 'default_neural_network_model': 'llama3',
+                'microsoft_redirect_uri': 'http://localhost:8000/auth/microsoft/callback/',
+                'microsoft_scope': 'https://graph.microsoft.com/Files.Read https://graph.microsoft.com/Sites.Read.All',
+                'microsoft_folder_path': '/Documents',
             }
         )
         return settings
+
+
+class MicrosoftGraphToken(models.Model):
+    """Модель для хранения токенов доступа Microsoft Graph"""
+    
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь'
+    )
+    access_token = models.TextField(
+        verbose_name='Токен доступа'
+    )
+    refresh_token = models.TextField(
+        blank=True,
+        verbose_name='Токен обновления'
+    )
+    token_type = models.CharField(
+        max_length=50,
+        default='Bearer',
+        verbose_name='Тип токена'
+    )
+    expires_at = models.DateTimeField(
+        verbose_name='Истекает'
+    )
+    scope = models.TextField(
+        verbose_name='Области доступа'
+    )
+    
+    # Мета-информация
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Обновлено')
+    
+    class Meta:
+        verbose_name = 'Токен Microsoft Graph'
+        verbose_name_plural = 'Токены Microsoft Graph'
+    
+    def __str__(self):
+        return f'Токен для {self.user.username}'
+    
+    @property
+    def is_expired(self):
+        """Проверить, истек ли токен"""
+        from django.utils import timezone
+        return timezone.now() >= self.expires_at
+    
+    def save(self, *args, **kwargs):
+        from django.utils import timezone
+        # Если токен истекает через 5 минут, считаем его истекшим
+        if not hasattr(self, 'expires_at') or self.expires_at is None:
+            self.expires_at = timezone.now() + timezone.timedelta(hours=1)
+        return super().save(*args, **kwargs)
 
 
 class ServerSettings(models.Model):
