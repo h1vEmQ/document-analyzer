@@ -145,6 +145,24 @@
                                 {% for error in form.model.errors %}
                                     <div class="text-danger">{{ error }}</div>
                                 {% endfor %}
+                                
+                                <!-- Информация о доступных моделях -->
+                                <div class="model-info mt-2">
+                                    <small>
+                                        {% if form.model.choices|length > 1 %}
+                                            <strong>Доступные модели:</strong><br>
+                                            {% for value, label in form.model.choices %}
+                                                {% if value %}
+                                                    • {{ label }}<br>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                                            <strong>Модели не установлены</strong><br>
+                                            Установите модели в Ollama для использования анализа нейросетью
+                                        {% endif %}
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>

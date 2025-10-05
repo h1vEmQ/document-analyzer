@@ -156,6 +156,65 @@ class OllamaComparisonForm(forms.Form):
         
         self.fields['base_document'].queryset = processed_docs
         self.fields['compared_document'].queryset = processed_docs
+        
+        # Получаем только установленные модели
+        available_models = self.get_available_models()
+        if available_models:
+            self.fields['model'].choices = available_models
+            # Устанавливаем первую доступную модель как значение по умолчанию
+            self.fields['model'].initial = available_models[0][0]
+        else:
+            # Если нет доступных моделей, скрываем поле
+            self.fields['model'].choices = [('', 'Модели не установлены')]
+            self.fields['model'].widget.attrs['disabled'] = True
+    
+    def get_available_models(self):
+        """Получает список доступных моделей из Ollama"""
+        try:
+            from .ollama_service import OllamaService
+            
+            # Создаем временный сервис для проверки доступности
+            ollama_service = OllamaService()
+            
+            if not ollama_service.is_available():
+                return []
+            
+            # Получаем список установленных моделей
+            installed_models = ollama_service.get_available_models()
+            
+            if not installed_models:
+                return []
+            
+            # Создаем список выбора из установленных моделей
+            available_choices = []
+            
+            # Маппинг технических названий на читаемые
+            model_display_names = {
+                'llama3': 'Llama 3',
+                'llama3.1': 'Llama 3.1',
+                'llama3:latest': 'Llama 3',
+                'llama3.1:latest': 'Llama 3.1',
+                'mistral': 'Mistral',
+                'mistral:latest': 'Mistral',
+                'codellama': 'Code Llama',
+                'codellama:latest': 'Code Llama',
+                'deepseek-r1:7b': 'DeepSeek R1 7B',
+                'deepseek-r1:8b': 'DeepSeek R1 8B',
+            }
+            
+            for model in installed_models:
+                # Используем читаемое название если есть, иначе техническое
+                display_name = model_display_names.get(model, model)
+                available_choices.append((model, display_name))
+            
+            return available_choices
+            
+        except Exception as e:
+            # В случае ошибки возвращаем пустой список
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Ошибка получения доступных моделей: {e}")
+            return []
     
     def clean(self):
         cleaned_data = super().clean()
@@ -166,6 +225,15 @@ class OllamaComparisonForm(forms.Form):
         if base_document and compared_document:
             if base_document == compared_document:
                 raise forms.ValidationError('Базовый и сравниваемый документы не могут быть одинаковыми')
+        
+        # Проверяем доступность выбранной модели
+        selected_model = cleaned_data.get('model')
+        if selected_model:
+            available_models = self.get_available_models()
+            available_model_names = [choice[0] for choice in available_models]
+            
+            if selected_model not in available_model_names:
+                raise forms.ValidationError('Выбранная модель не установлена или недоступна')
         
         # Автоматически заполняем название анализа, если оно пустое
         if not cleaned_data.get('title') and base_document and compared_document:
