@@ -378,7 +378,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
 <script>
     // Глобальные переменные для графиков
     let cpuChart, memoryChart, requestsChart, distributionChart;
@@ -400,135 +400,106 @@
     
     // Инициализация графика CPU
     function initCPUChart() {
-        const ctx = document.getElementById('cpuChart').getContext('2d');
+        const ctx = document.getElementById('cpuChart');
+        if (!ctx) {
+            return;
+        }
         const currentCPU = {{ metrics_data.cpu_usage|default:0 }};
         
-        cpuChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: generateTimeLabels(),
-                datasets: [{
-                    label: 'Использование CPU (%)',
-                    data: [...generateRandomData(currentCPU - 10, currentCPU + 10, 23), currentCPU],
-                    borderColor: '#007bff',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        }
-                    }
+        try {
+            cpuChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1', '2', '3', '4', '5'],
+                    datasets: [{
+                        label: 'CPU %',
+                        data: [currentCPU - 5, currentCPU, currentCPU + 2, currentCPU - 1, currentCPU],
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 2
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
                 }
-            }
-        });
+            });
+        } catch (error) {
+            // Ошибка создания графика
+        }
     }
     
     // Инициализация графика памяти
     function initMemoryChart() {
-        const ctx = document.getElementById('memoryChart').getContext('2d');
+        const ctx = document.getElementById('memoryChart');
+        if (!ctx) {
+            return;
+        }
         const currentMemory = {{ metrics_data.memory_usage|default:0 }};
         
-        memoryChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: generateTimeLabels(),
-                datasets: [{
-                    label: 'Использование памяти (%)',
-                    data: [...generateRandomData(currentMemory - 5, currentMemory + 5, 23), currentMemory],
-                    borderColor: '#28a745',
-                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        }
-                    }
+        try {
+            memoryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1', '2', '3', '4', '5'],
+                    datasets: [{
+                        label: 'Память %',
+                        data: [currentMemory - 3, currentMemory, currentMemory + 1, currentMemory - 2, currentMemory],
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderWidth: 2
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
                 }
-            }
-        });
+            });
+        } catch (error) {
+            // Ошибка создания графика
+        }
     }
     
     // Инициализация графика запросов
     function initRequestsChart() {
-        const ctx = document.getElementById('requestsChart').getContext('2d');
+        const ctx = document.getElementById('requestsChart');
+        if (!ctx) {
+            return;
+        }
         const currentRPS = {{ metrics_data.requests_per_second|default:0 }};
         
-        requestsChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: generateTimeLabels(),
-                datasets: [{
-                    label: 'Запросов в час',
-                    data: generateRandomData(currentRPS * 3000, currentRPS * 3700, 24),
-                    backgroundColor: 'rgba(255, 193, 7, 0.8)',
-                    borderColor: '#ffc107',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value.toLocaleString('ru-RU');
-                            }
-                        }
-                    }
+        try {
+            requestsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['1', '2', '3', '4', '5'],
+                    datasets: [{
+                        label: 'Запросы',
+                        data: [currentRPS * 10, currentRPS * 15, currentRPS * 12, currentRPS * 18, currentRPS * 14],
+                        backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                        borderColor: '#ffc107',
+                        borderWidth: 1
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
                 }
-            }
-        });
+            });
+        } catch (error) {
+            // Ошибка создания графика
+        }
     }
     
     // Инициализация круговой диаграммы
     function initDistributionChart() {
-        const ctx = document.getElementById('distributionChart').getContext('2d');
+        const ctx = document.getElementById('distributionChart');
+        if (!ctx) {
+            return;
+        }
         
-        distributionChart = new Chart(ctx, {
+        try {
+            distributionChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Успешные запросы', 'Ошибки 4xx', 'Ошибки 5xx', 'Перенаправления'],
@@ -563,6 +534,10 @@
                 }
             }
         });
+        
+        } catch (error) {
+            // Ошибка создания графика
+        }
     }
     
     // Функции обновления графиков
@@ -606,10 +581,18 @@
     
     // Инициализация всех графиков при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
-        initCPUChart();
-        initMemoryChart();
-        initRequestsChart();
-        initDistributionChart();
+        // Проверяем наличие Chart.js
+        if (typeof Chart === 'undefined') {
+            return;
+        }
+        
+        // Небольшая задержка для полной загрузки DOM
+        setTimeout(function() {
+            initCPUChart();
+            initMemoryChart();
+            initRequestsChart();
+            initDistributionChart();
+        }, 100);
         
         // Автообновление графиков каждые 30 секунд
         setInterval(function() {
