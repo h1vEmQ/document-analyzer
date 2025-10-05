@@ -500,6 +500,11 @@ class OllamaComparisonDetailView(LoginRequiredMixin, DetailView):
             'type': comparison.analysis_type,
         }
         
+        # Добавляем информацию об отчетах
+        reports = comparison.reports.filter(status='ready').order_by('-generated_date')
+        context['reports'] = reports
+        context['latest_report'] = reports.first()
+        
         return context
 
 

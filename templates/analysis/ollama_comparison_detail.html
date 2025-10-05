@@ -97,7 +97,14 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>🧠 {{ comparison.title }}</h2>
             <div>
-                {% if comparison.reports.exists %}
+                {% if latest_report %}
+                    <a href="{% url 'reports:detail' latest_report.id %}" class="btn btn-success me-2">
+                        <i class="fas fa-eye"></i> Просмотреть отчет ({{ latest_report.format|upper }})
+                    </a>
+                    <a href="{{ latest_report.file.url }}" class="btn btn-primary me-2" target="_blank">
+                        <i class="fas fa-download"></i> Скачать отчет
+                    </a>
+                {% elif comparison.reports.exists %}
                     <a href="{% url 'reports:list' %}" class="btn btn-info me-2">
                         <i class="fas fa-file-alt"></i> Просмотреть отчеты ({{ comparison.reports.count }})
                     </a>
@@ -168,6 +175,49 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Информация об отчетах -->
+        {% if latest_report %}
+        <div class="alert alert-success mb-4">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-file-alt fa-2x me-3"></i>
+                <div>
+                    <h6 class="mb-1">
+                        <i class="fas fa-check-circle"></i> Отчет создан автоматически
+                    </h6>
+                    <p class="mb-1">
+                        <strong>Формат:</strong> {{ latest_report.format|upper }}
+                        <strong>Дата создания:</strong> {{ latest_report.generated_date|date:"d.m.Y H:i" }}
+                    </p>
+                    <div>
+                        <a href="{% url 'reports:detail' latest_report.id %}" class="btn btn-sm btn-success me-2">
+                            <i class="fas fa-eye"></i> Просмотреть
+                        </a>
+                        <a href="{{ latest_report.file.url }}" class="btn btn-sm btn-primary" target="_blank">
+                            <i class="fas fa-download"></i> Скачать
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif reports.exists %}
+        <div class="alert alert-info mb-4">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-file-alt fa-2x me-3"></i>
+                <div>
+                    <h6 class="mb-1">
+                        <i class="fas fa-info-circle"></i> Доступны отчеты
+                    </h6>
+                    <p class="mb-1">
+                        Создано отчетов: {{ reports.count }}
+                    </p>
+                    <a href="{% url 'reports:list' %}" class="btn btn-sm btn-info">
+                        <i class="fas fa-list"></i> Просмотреть все отчеты
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         
         <!-- Результаты анализа -->
         {% if comparison.status == 'completed' and comparison.analysis_result %}
