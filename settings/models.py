@@ -127,6 +127,41 @@ class ApplicationSettings(models.Model):
         verbose_name='Путь к папке в SharePoint'
     )
     
+    # Настройки Microsoft Active Directory SSO
+    microsoft_ad_sso_enabled = models.BooleanField(
+        default=False,
+        verbose_name='Microsoft Active Directory SSO включен'
+    )
+    microsoft_ad_sso_tenant_id = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='ID арендатора AD (Tenant ID)'
+    )
+    microsoft_ad_sso_client_id = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='ID клиента AD (Client ID)'
+    )
+    microsoft_ad_sso_client_secret = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name='Секрет клиента AD (Client Secret)'
+    )
+    microsoft_ad_sso_redirect_uri = models.URLField(
+        blank=True,
+        default='http://localhost:8000/auth/microsoft/sso/callback/',
+        verbose_name='URI перенаправления AD SSO'
+    )
+    microsoft_ad_sso_scope = models.TextField(
+        default='https://graph.microsoft.com/User.Read https://graph.microsoft.com/Group.Read.All',
+        verbose_name='Области доступа AD SSO (Scope)'
+    )
+    microsoft_ad_sso_domain = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='Домен Active Directory'
+    )
+    
     # Мета-информация
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Обновлено')
@@ -166,9 +201,22 @@ class ApplicationSettings(models.Model):
                 'app_description': 'Система анализа документов',
                 'items_per_page': 10,
                 'default_neural_network_model': 'llama3',
+                'microsoft_graph_enabled': False,
+                'microsoft_tenant_id': '',
+                'microsoft_client_id': '',
+                'microsoft_client_secret': '',
                 'microsoft_redirect_uri': 'http://localhost:8000/auth/microsoft/callback/',
                 'microsoft_scope': 'https://graph.microsoft.com/Files.Read https://graph.microsoft.com/Sites.Read.All',
+                'microsoft_site_id': '',
+                'microsoft_drive_id': '',
                 'microsoft_folder_path': '/Documents',
+                'microsoft_ad_sso_enabled': False,
+                'microsoft_ad_sso_tenant_id': '',
+                'microsoft_ad_sso_client_id': '',
+                'microsoft_ad_sso_client_secret': '',
+                'microsoft_ad_sso_redirect_uri': 'http://localhost:8000/auth/microsoft/sso/callback/',
+                'microsoft_ad_sso_scope': 'https://graph.microsoft.com/User.Read https://graph.microsoft.com/Group.Read.All',
+                'microsoft_ad_sso_domain': '',
             }
         )
         return settings

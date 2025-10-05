@@ -333,7 +333,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <i class="fas fa-shield-alt"></i> Безопасность
             </div>
             <div class="settings-tab" data-target="microsoft-settings">
-                <i class="fab fa-microsoft"></i> Microsoft
+                <i class="fab fa-microsoft"></i> Microsoft Graph
+            </div>
+            <div class="settings-tab" data-target="microsoft-ad-sso-settings">
+                <i class="fas fa-users-cog"></i> AD SSO
             </div>
         </div>
         
@@ -616,6 +619,91 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         </div>
         
+        <!-- Настройки Microsoft Active Directory SSO -->
+        <div id="microsoft-ad-sso-settings" class="tab-content">
+            <div class="settings-section">
+                <div class="settings-header">
+                    <i class="fas fa-users-cog"></i>
+                    Microsoft Active Directory SSO
+                </div>
+                <div class="settings-content">
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" name="microsoft_ad_sso_enabled" id="microsoft_ad_sso_enabled" class="form-check-input" 
+                                   {% if settings.microsoft_ad_sso_enabled %}checked{% endif %}>
+                            <label for="microsoft_ad_sso_enabled" class="form-check-label">
+                                Включить Microsoft Active Directory SSO
+                            </label>
+                        </div>
+                        <div class="help-text">Позволяет пользователям входить в систему через Active Directory</div>
+                    </div>
+                    
+                    <div class="microsoft-ad-sso-settings-group" id="microsoft-ad-sso-settings-group" style="{% if not settings.microsoft_ad_sso_enabled %}display: none;{% endif %}">
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_tenant_id">ID арендатора Active Directory (Tenant ID)</label>
+                            <input type="text" name="microsoft_ad_sso_tenant_id" id="microsoft_ad_sso_tenant_id" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_tenant_id }}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                            <div class="help-text">GUID идентификатор арендатора Azure AD</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_client_id">ID клиента Active Directory (Client ID)</label>
+                            <input type="text" name="microsoft_ad_sso_client_id" id="microsoft_ad_sso_client_id" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_client_id }}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                            <div class="help-text">GUID идентификатор приложения в Azure AD</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_client_secret">Секрет клиента Active Directory (Client Secret)</label>
+                            <input type="password" name="microsoft_ad_sso_client_secret" id="microsoft_ad_sso_client_secret" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_client_secret }}" placeholder="Введите секрет клиента AD">
+                            <div class="help-text">Секретный ключ приложения из Azure AD</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_redirect_uri">URI перенаправления AD SSO</label>
+                            <input type="url" name="microsoft_ad_sso_redirect_uri" id="microsoft_ad_sso_redirect_uri" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_redirect_uri }}" placeholder="https://yourdomain.com/auth/microsoft/sso/callback/">
+                            <div class="help-text">URL для обработки ответа авторизации SSO</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_scope">Области доступа AD SSO (Scope)</label>
+                            <textarea name="microsoft_ad_sso_scope" id="microsoft_ad_sso_scope" class="form-control" rows="3" 
+                                      placeholder="https://graph.microsoft.com/User.Read https://graph.microsoft.com/Group.Read.All">{{ settings.microsoft_ad_sso_scope }}</textarea>
+                            <div class="help-text">Список разрешений для доступа к Microsoft Graph API через SSO</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="microsoft_ad_sso_domain">Домен Active Directory</label>
+                            <input type="text" name="microsoft_ad_sso_domain" id="microsoft_ad_sso_domain" class="form-control" 
+                                   value="{{ settings.microsoft_ad_sso_domain }}" placeholder="company.com">
+                            <div class="help-text">Домен организации для проверки пользователей</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопки управления Microsoft AD SSO -->
+                    <div class="form-group">
+                        <div class="d-flex gap-2">
+                            <a href="#" class="btn btn-primary" id="microsoft-ad-sso-auth-btn">
+                                <i class="fas fa-sign-in-alt"></i> Тестировать SSO
+                            </a>
+                            <a href="#" class="btn btn-success" id="microsoft-ad-sso-test-btn">
+                                <i class="fas fa-check-circle"></i> Проверить настройки
+                            </a>
+                            <a href="#" class="btn btn-warning" id="microsoft-ad-sso-disable-btn">
+                                <i class="fas fa-ban"></i> Отключить SSO
+                            </a>
+                        </div>
+                        <div class="help-text">
+                            Нажмите "Тестировать SSO" для проверки авторизации через Active Directory. 
+                            Убедитесь, что все поля заполнены корректно.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Кнопки действий -->
         <div class="settings-section">
             <div class="settings-content">
@@ -664,15 +752,27 @@ function resetToDefaults() {
         document.getElementById('microsoft_drive_id').value = '';
         document.getElementById('microsoft_folder_path').value = '/Documents';
         
+        // Сброс настроек Microsoft Active Directory SSO
+        document.getElementById('microsoft_ad_sso_enabled').checked = false;
+        document.getElementById('microsoft_ad_sso_tenant_id').value = '';
+        document.getElementById('microsoft_ad_sso_client_id').value = '';
+        document.getElementById('microsoft_ad_sso_client_secret').value = '';
+        document.getElementById('microsoft_ad_sso_redirect_uri').value = 'http://localhost:8000/auth/microsoft/sso/callback/';
+        document.getElementById('microsoft_ad_sso_scope').value = 'https://graph.microsoft.com/User.Read https://graph.microsoft.com/Group.Read.All';
+        document.getElementById('microsoft_ad_sso_domain').value = '';
+        
         // Скрыть настройки Microsoft Graph
         document.getElementById('microsoft-settings-group').style.display = 'none';
+        
+        // Скрыть настройки Microsoft AD SSO
+        document.getElementById('microsoft-ad-sso-settings-group').style.display = 'none';
         
         // Переключение на первую вкладку
         document.querySelector('.settings-tab[data-target="basic-settings"]').click();
     }
 }
 
-// Обработчик для переключения настроек Microsoft Graph
+// Обработчики для переключения настроек Microsoft Graph и AD SSO
 document.addEventListener('DOMContentLoaded', function() {
     const microsoftGraphEnabled = document.getElementById('microsoft_graph_enabled');
     const microsoftSettingsGroup = document.getElementById('microsoft-settings-group');
@@ -683,6 +783,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 microsoftSettingsGroup.style.display = 'block';
             } else {
                 microsoftSettingsGroup.style.display = 'none';
+            }
+        });
+    }
+    
+    const microsoftAdSsoEnabled = document.getElementById('microsoft_ad_sso_enabled');
+    const microsoftAdSsoSettingsGroup = document.getElementById('microsoft-ad-sso-settings-group');
+    
+    if (microsoftAdSsoEnabled && microsoftAdSsoSettingsGroup) {
+        microsoftAdSsoEnabled.addEventListener('change', function() {
+            if (this.checked) {
+                microsoftAdSsoSettingsGroup.style.display = 'block';
+            } else {
+                microsoftAdSsoSettingsGroup.style.display = 'none';
             }
         });
         

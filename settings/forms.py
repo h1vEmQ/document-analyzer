@@ -32,6 +32,13 @@ class ApplicationSettingsForm(forms.ModelForm):
             'microsoft_site_id',
             'microsoft_drive_id',
             'microsoft_folder_path',
+            'microsoft_ad_sso_enabled',
+            'microsoft_ad_sso_tenant_id',
+            'microsoft_ad_sso_client_id',
+            'microsoft_ad_sso_client_secret',
+            'microsoft_ad_sso_redirect_uri',
+            'microsoft_ad_sso_scope',
+            'microsoft_ad_sso_domain',
         ]
         widgets = {
             'app_name': forms.TextInput(attrs={
@@ -113,6 +120,32 @@ class ApplicationSettingsForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': '/Documents'
             }),
+            'microsoft_ad_sso_tenant_id': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+            }),
+            'microsoft_ad_sso_client_id': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+            }),
+            'microsoft_ad_sso_client_secret': forms.TextInput(attrs={
+                'class': 'form-control',
+                'type': 'password',
+                'placeholder': 'Введите секрет клиента AD'
+            }),
+            'microsoft_ad_sso_redirect_uri': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://yourdomain.com/auth/microsoft/sso/callback/'
+            }),
+            'microsoft_ad_sso_scope': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'https://graph.microsoft.com/User.Read https://graph.microsoft.com/Group.Read.All'
+            }),
+            'microsoft_ad_sso_domain': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'company.com'
+            }),
             'default_neural_network_model': forms.Select(attrs={
                 'class': 'form-control'
             }),
@@ -126,6 +159,7 @@ class ApplicationSettingsForm(forms.ModelForm):
         self.fields['auto_reports_enabled'].widget.attrs.update({'class': 'form-check-input'})
         self.fields['email_notifications_enabled'].widget.attrs.update({'class': 'form-check-input'})
         self.fields['microsoft_graph_enabled'].widget.attrs.update({'class': 'form-check-input'})
+        self.fields['microsoft_ad_sso_enabled'].widget.attrs.update({'class': 'form-check-input'})
         
         # Получаем доступные модели нейросетей для выбора
         from analysis.ollama_service import OllamaService
@@ -283,6 +317,52 @@ class ApplicationSettingsForm(forms.ModelForm):
                 raise ValidationError('Путь к папке должен начинаться с символа "/"')
         return folder_path
     
+    def clean_microsoft_ad_sso_tenant_id(self):
+        """Валидация ID арендатора Microsoft AD SSO"""
+        tenant_id = self.cleaned_data['microsoft_ad_sso_tenant_id']
+        if tenant_id:
+            import re
+            if not re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', tenant_id):
+                raise ValidationError('ID арендатора должен быть в формате GUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')
+        return tenant_id
+    
+    def clean_microsoft_ad_sso_client_id(self):
+        """Валидация ID клиента Microsoft AD SSO"""
+        client_id = self.cleaned_data['microsoft_ad_sso_client_id']
+        if client_id:
+            import re
+            if not re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', client_id):
+                raise ValidationError('ID клиента должен быть в формате GUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')
+        return client_id
+    
+    def clean_microsoft_ad_sso_redirect_uri(self):
+        """Валидация URI перенаправления Microsoft AD SSO"""
+        redirect_uri = self.cleaned_data['microsoft_ad_sso_redirect_uri']
+        if redirect_uri:
+            if not redirect_uri.startswith(('http://', 'https://')):
+                raise ValidationError('URI перенаправления должен начинаться с http:// или https://')
+        return redirect_uri
+    
+    def clean_microsoft_ad_sso_scope(self):
+        """Валидация областей доступа Microsoft AD SSO"""
+        scope = self.cleaned_data['microsoft_ad_sso_scope']
+        if scope:
+            scope_list = [s.strip() for s in scope.split() if s.strip()]
+            required_scopes = ['https://graph.microsoft.com/User.Read']
+            
+            for required_scope in required_scopes:
+                if required_scope not in scope_list:
+                    raise ValidationError(f'Необходимо указать область доступа: {required_scope}')
+        return scope
+    
+    def clean_microsoft_ad_sso_domain(self):
+        """Валидация домена Active Directory"""
+        domain = self.cleaned_data['microsoft_ad_sso_domain']
+        if domain:
+            if '.' not in domain:
+                raise ValidationError('Домен должен содержать точку (например: company.com)')
+        return domain
+    
     def clean(self):
         """Общая валидация формы"""
         cleaned_data = super().clean()
@@ -308,6 +388,22 @@ class ApplicationSettingsForm(forms.ModelForm):
                 field_value = cleaned_data.get(field_name)
                 if not field_value:
                     self.add_error(field_name, f'Поле обязательно при включенной интеграции с Microsoft Graph')
+        
+        # Проверяем настройки Microsoft Active Directory SSO
+        microsoft_ad_sso_enabled = cleaned_data.get('microsoft_ad_sso_enabled')
+        if microsoft_ad_sso_enabled:
+            required_fields = [
+                'microsoft_ad_sso_tenant_id',
+                'microsoft_ad_sso_client_id', 
+                'microsoft_ad_sso_client_secret',
+                'microsoft_ad_sso_redirect_uri',
+                'microsoft_ad_sso_domain'
+            ]
+            
+            for field_name in required_fields:
+                field_value = cleaned_data.get(field_name)
+                if not field_value:
+                    self.add_error(field_name, f'Поле обязательно при включенном Microsoft Active Directory SSO')
         
         return cleaned_data
 
