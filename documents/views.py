@@ -304,25 +304,37 @@ class DocumentVersionUploadView(LoginRequiredMixin, View):
                     
                     # Парсинг документа
                     parser_service = DocumentParserService()
-                    content_data = parser_service.parse_document(new_document)
+                    parse_result = parser_service.parse_document(new_document)
                     
-                    # Сохранение результатов
-                    parser_service.save_parsed_content(new_document, content_data)
-                    
-                    # Обновляем статус и дату обработки
-                    new_document.status = 'processed'
-                    new_document.processed_date = timezone.now()
-                    new_document.save()
-                    
-                    # Уведомление об успехе
-                    version_count = new_document.get_version_count()
-                    sections_count = len(content_data.get('sections', []))
-                    tables_count = len(content_data.get('tables', []))
-                    
-                    messages.success(request, 
-                        f'Новая версия {new_document.version} успешно загружена и обработана! '
-                        f'Всего версий: {version_count}. '
-                        f'Найдено разделов: {sections_count}, таблиц: {tables_count}')
+                    if parse_result['success']:
+                        content_data = parse_result['content_data']
+                        
+                        # Сохранение результатов
+                        parser_service.save_parsed_content(new_document, content_data)
+                        
+                        # Обновляем статус и дату обработки
+                        new_document.status = 'processed'
+                        new_document.processed_date = timezone.now()
+                        new_document.save()
+                        
+                        # Уведомление об успехе
+                        version_count = new_document.get_version_count()
+                        sections_count = len(content_data.get('sections', []))
+                        tables_count = len(content_data.get('tables', []))
+                        
+                        messages.success(request, 
+                            f'Новая версия {new_document.version} успешно загружена и обработана! '
+                            f'Всего версий: {version_count}. '
+                            f'Найдено разделов: {sections_count}, таблиц: {tables_count}')
+                    else:
+                        # Парсинг не удался
+                        error_message = parse_result.get("error", "Неизвестная ошибка")
+                        new_document.status = 'error'
+                        new_document.processing_error = error_message
+                        new_document.save()
+                        
+                        messages.error(request, 
+                            f'Ошибка при обработке документа: {error_message}')
                         
                 except Exception as e:
                     logger.error(f"Ошибка автоматической обработки новой версии {new_document.id}: {e}")
