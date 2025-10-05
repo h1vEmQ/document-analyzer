@@ -67,6 +67,23 @@ class DocumentDetailView(LoginRequiredMixin, DetailView):
     
     def get_queryset(self):
         return Document.objects.filter(user=self.request.user)
+    
+    def get(self, request, *args, **kwargs):
+        """
+        Если запрашивается не последняя версия документа, перенаправляем на последнюю
+        """
+        self.object = self.get_object()
+        
+        # Получаем последнюю версию документа
+        latest_version = self.object.get_latest_version()
+        
+        # Если текущий документ не является последней версией, перенаправляем
+        if latest_version and latest_version.id != self.object.id:
+            return redirect('documents:detail', pk=latest_version.id)
+        
+        # Иначе показываем как обычно
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
 
 
 class DocumentUploadView(LoginRequiredMixin, CreateView):
