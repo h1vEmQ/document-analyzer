@@ -204,12 +204,12 @@ class OllamaService:
     ],
     "differences": [
         {{
-            "type": "content|structure|format",
+            "type": "content",
             "description": "Описание различия",
             "location": "Место в документе",
             "old_value": "Значение в первом документе",
             "new_value": "Значение во втором документе",
-            "significance": "high|medium|low"
+            "significance": "high"
         }}
     ],
     "recommendations": [
@@ -314,9 +314,9 @@ class OllamaService:
 
 Предоставь результат в JSON формате. ВСЕ ТЕКСТЫ В JSON ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ:
 {{
-    "sentiment": "positive|negative|neutral",
-    "confidence": 0.0-1.0,
-    "emotions": ["список эмоций"],
+    "sentiment": "positive",
+    "confidence": 0.8,
+    "emotions": ["довольство", "уверенность"],
     "summary": "краткое описание тональности"
 }}"""
         
@@ -390,7 +390,7 @@ class OllamaService:
     "key_points": [
         {{
             "point": "ключевой момент",
-            "importance": "high|medium|low",
+            "importance": "high",
             "category": "категория"
         }}
     ],

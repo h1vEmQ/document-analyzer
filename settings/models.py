@@ -10,7 +10,7 @@ class ApplicationSettings(models.Model):
     # Основные настройки приложения
     app_name = models.CharField(
         max_length=100, 
-        default='Document analyzer',
+        default='📊 Анализатор документов',
         verbose_name='Название приложения'
     )
     app_description = models.TextField(
@@ -116,7 +116,7 @@ class ApplicationSettings(models.Model):
         """Получить настройки приложения (создать если не существует)"""
         settings, created = cls.objects.get_or_create(
             defaults={
-                'app_name': 'Document analyzer',
+                'app_name': '📊 Анализатор документов',
                 'app_description': 'Система анализа документов',
                 'items_per_page': 10,
                 'default_neural_network_model': 'llama3',

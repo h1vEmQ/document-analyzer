@@ -167,7 +167,7 @@ class ApplicationSettingsAdmin(admin.ModelAdmin):
     def reset_to_defaults(self, request, queryset):
         """Сброс настроек к значениям по умолчанию"""
         for settings in queryset:
-            settings.app_name = 'WARA'
+            settings.app_name = '📊 Анализатор документов'
             settings.app_description = 'Система анализа документов'
             settings.max_file_size = 10485760
             settings.allowed_file_types = 'docx,pdf'
