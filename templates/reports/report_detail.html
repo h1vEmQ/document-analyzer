@@ -25,17 +25,20 @@
                     </div>
                 {% endif %}
             </div>
-            <div class="btn-group" role="group">
+            <div class="d-flex gap-2">
                 {% if report.file %}
-                    <a href="{% url 'reports:view' report.pk %}" class="btn btn-primary" target="_blank">
-                        👁️ Просмотреть отчет
+                    <a href="{% url 'reports:view' report.pk %}" class="btn btn-primary d-flex flex-column align-items-center justify-content-center" target="_blank" style="min-width: 120px; height: 60px;">
+                        <i class="fas fa-eye mb-1" style="font-size: 1.2em;"></i>
+                        <span style="font-size: 0.85em;">Просмотреть отчет</span>
                     </a>
-                    <a href="{% url 'reports:download' report.pk %}" class="btn btn-success">
-                        📥 Скачать отчет
+                    <a href="{% url 'reports:download' report.pk %}" class="btn btn-success d-flex flex-column align-items-center justify-content-center" style="min-width: 120px; height: 60px;">
+                        <i class="fas fa-download mb-1" style="font-size: 1.2em;"></i>
+                        <span style="font-size: 0.85em;">Скачать отчет</span>
                     </a>
                 {% endif %}
-                <a href="{% url 'reports:delete' report.pk %}" class="btn btn-danger">
-                    🗑️ Удалить отчет
+                <a href="{% url 'reports:delete' report.pk %}" class="btn btn-danger d-flex flex-column align-items-center justify-content-center" style="min-width: 120px; height: 60px;">
+                    <i class="fas fa-trash mb-1" style="font-size: 1.2em;"></i>
+                    <span style="font-size: 0.85em;">Удалить отчет</span>
                 </a>
             </div>
         </div>

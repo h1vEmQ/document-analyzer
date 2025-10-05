@@ -221,17 +221,20 @@
                             </div>
                             
                             <div class="card-footer">
-                                <div class="btn-group w-100" role="group">
-                                    <a href="{% url 'reports:detail' report.pk %}" class="btn btn-outline-primary btn-sm" title="Просмотр">
-                                        <i class="fas fa-eye"></i>
+                                <div class="d-flex gap-1">
+                                    <a href="{% url 'reports:detail' report.pk %}" class="btn btn-outline-primary btn-sm d-flex flex-column align-items-center justify-content-center flex-fill" title="Просмотр" style="height: 50px;">
+                                        <i class="fas fa-eye mb-1" style="font-size: 1em;"></i>
+                                        <span style="font-size: 0.7em;">Просмотр</span>
                                     </a>
                                     {% if report.file %}
-                                        <a href="{% url 'reports:download' report.pk %}" class="btn btn-outline-success btn-sm" title="Скачать">
-                                            <i class="fas fa-download"></i>
+                                        <a href="{% url 'reports:download' report.pk %}" class="btn btn-outline-success btn-sm d-flex flex-column align-items-center justify-content-center flex-fill" title="Скачать" style="height: 50px;">
+                                            <i class="fas fa-download mb-1" style="font-size: 1em;"></i>
+                                            <span style="font-size: 0.7em;">Скачать</span>
                                         </a>
                                     {% endif %}
-                                    <a href="{% url 'reports:delete' report.pk %}" class="btn btn-outline-danger btn-sm" title="Удалить">
-                                        <i class="fas fa-trash"></i>
+                                    <a href="{% url 'reports:delete' report.pk %}" class="btn btn-outline-danger btn-sm d-flex flex-column align-items-center justify-content-center flex-fill" title="Удалить" style="height: 50px;">
+                                        <i class="fas fa-trash mb-1" style="font-size: 1em;"></i>
+                                        <span style="font-size: 0.7em;">Удалить</span>
                                     </a>
                                 </div>
                             </div>

@@ -197,37 +197,6 @@
             </div>
         {% endif %}
         
-        <!-- Информация о версионировании -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-info-circle"></i> О системе версионирования
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-check-circle text-success"></i> Преимущества:</h6>
-                        <ul>
-                            <li>Сохранение истории изменений</li>
-                            <li>Возможность сравнения версий</li>
-                            <li>Откат к предыдущим версиям</li>
-                            <li>Отслеживание эволюции документа</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-lightbulb text-warning"></i> Рекомендации:</h6>
-                        <ul>
-                            <li>Указывайте заметки к версиям</li>
-                            <li>Регулярно создавайте новые версии</li>
-                            <li>Используйте осмысленные названия</li>
-                            <li>Сравнивайте версии для анализа изменений</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
         <!-- Пагинация -->
         {% if is_paginated %}
             <nav aria-label="Навигация по страницам" class="mt-4">
@@ -277,6 +246,37 @@
                 </div>
             </nav>
         {% endif %}
+        
+        <!-- Информация о версионировании -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle"></i> О системе версионирования
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-check-circle text-success"></i> Преимущества:</h6>
+                        <ul>
+                            <li>Сохранение истории изменений</li>
+                            <li>Возможность сравнения версий</li>
+                            <li>Откат к предыдущим версиям</li>
+                            <li>Отслеживание эволюции документа</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-lightbulb text-warning"></i> Рекомендации:</h6>
+                        <ul>
+                            <li>Указывайте заметки к версиям</li>
+                            <li>Регулярно создавайте новые версии</li>
+                            <li>Используйте осмысленные названия</li>
+                            <li>Сравнивайте версии для анализа изменений</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

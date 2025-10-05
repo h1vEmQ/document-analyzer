@@ -43,7 +43,12 @@ class AdminUserListView(AdminRequiredMixin, ListView):
     model = User
     template_name = 'users/admin/user_list.html'
     context_object_name = 'users'
-    paginate_by = 20
+    
+    def get_paginate_by(self, queryset):
+        """Получить количество элементов на странице из настроек приложения"""
+        from settings.models import ApplicationSettings
+        settings = ApplicationSettings.get_settings()
+        return settings.items_per_page
     
     def get_queryset(self):
         """Возвращаем всех пользователей с дополнительной информацией"""

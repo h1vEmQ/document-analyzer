@@ -96,28 +96,34 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>🧠 {{ comparison.title }}</h2>
-            <div>
+            <div class="d-flex gap-2">
                 {% if latest_report %}
-                    <a href="{% url 'reports:detail' latest_report.id %}" class="btn btn-success me-2">
-                        <i class="fas fa-eye"></i> Просмотреть отчет ({{ latest_report.format|upper }})
+                    <a href="{% url 'reports:detail' latest_report.id %}" class="btn btn-success d-flex flex-column align-items-center justify-content-center" style="min-width: 140px; height: 60px;">
+                        <i class="fas fa-eye mb-1" style="font-size: 1.2em;"></i>
+                        <span style="font-size: 0.75em;">Просмотреть отчет ({{ latest_report.format|upper }})</span>
                     </a>
-                    <a href="{{ latest_report.file.url }}" class="btn btn-primary me-2" target="_blank">
-                        <i class="fas fa-download"></i> Скачать отчет
+                    <a href="{{ latest_report.file.url }}" class="btn btn-primary d-flex flex-column align-items-center justify-content-center" target="_blank" style="min-width: 120px; height: 60px;">
+                        <i class="fas fa-download mb-1" style="font-size: 1.2em;"></i>
+                        <span style="font-size: 0.85em;">Скачать отчет</span>
                     </a>
                 {% elif comparison.reports.exists %}
-                    <a href="{% url 'reports:list' %}" class="btn btn-info me-2">
-                        <i class="fas fa-file-alt"></i> Просмотреть отчеты ({{ comparison.reports.count }})
+                    <a href="{% url 'reports:list' %}" class="btn btn-info d-flex flex-column align-items-center justify-content-center" style="min-width: 140px; height: 60px;">
+                        <i class="fas fa-file-alt mb-1" style="font-size: 1.2em;"></i>
+                        <span style="font-size: 0.75em;">Просмотреть отчеты ({{ comparison.reports.count }})</span>
                     </a>
                 {% else %}
-                    <a href="{% url 'reports:generate' comparison.id %}" class="btn btn-success me-2">
-                        <i class="fas fa-file-alt"></i> Создать отчет
+                    <a href="{% url 'reports:generate' comparison.id %}" class="btn btn-success d-flex flex-column align-items-center justify-content-center" style="min-width: 120px; height: 60px;">
+                        <i class="fas fa-file-alt mb-1" style="font-size: 1.2em;"></i>
+                        <span style="font-size: 0.85em;">Создать отчет</span>
                     </a>
                 {% endif %}
-                <a href="{% url 'analysis:ollama_create' %}" class="btn btn-primary me-2">
-                    <i class="fas fa-plus"></i> Новый анализ
+                <a href="{% url 'analysis:ollama_create' %}" class="btn btn-primary d-flex flex-column align-items-center justify-content-center" style="min-width: 120px; height: 60px;">
+                    <i class="fas fa-plus mb-1" style="font-size: 1.2em;"></i>
+                    <span style="font-size: 0.85em;">Новый анализ</span>
                 </a>
-                <a href="{% url 'analysis:list' %}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Назад к списку
+                <a href="{% url 'analysis:list' %}" class="btn btn-secondary d-flex flex-column align-items-center justify-content-center" style="min-width: 120px; height: 60px;">
+                    <i class="fas fa-arrow-left mb-1" style="font-size: 1.2em;"></i>
+                    <span style="font-size: 0.85em;">Назад к списку</span>
                 </a>
             </div>
         </div>

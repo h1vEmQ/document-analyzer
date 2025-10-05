@@ -401,7 +401,10 @@ class DocumentVersionHistoryView(LoginRequiredMixin, DetailView):
         versions = root_document.get_version_history()
         
         # Добавляем пагинацию
-        paginator = Paginator(versions, 10)  # 10 версий на страницу
+        from settings.models import ApplicationSettings
+        settings = ApplicationSettings.get_settings()
+        items_per_page = settings.items_per_page
+        paginator = Paginator(versions, items_per_page)
         page_number = self.request.GET.get('page')
         page_obj = paginator.get_page(page_number)
         
