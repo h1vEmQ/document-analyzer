@@ -106,6 +106,7 @@ class OllamaComparisonForm(forms.Form):
         ('llama3.1', 'Llama 3.1'),
         ('mistral', 'Mistral'),
         ('codellama', 'Code Llama'),
+        ('deepseek-r1:7b', 'DeepSeek R1 7B'),
     ]
     
     base_document = forms.ModelChoiceField(

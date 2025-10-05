@@ -68,22 +68,35 @@ class OllamaService:
         Returns:
             Dict с ответом модели
         """
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": stream,
-            "options": {
+        # Настройки для разных моделей
+        if self.model.startswith('deepseek'):
+            # Для DeepSeek увеличиваем таймаут и настраиваем параметры
+            timeout = 300  # 5 минут
+            options = {
+                "temperature": 0.3,  # Более детерминированные ответы
+                "top_p": 0.8,
+                "stop": ["<|end|>", "[/INST]", "Human:", "Assistant:"]
+            }
+        else:
+            timeout = 120  # 2 минуты
+            options = {
                 "temperature": 0.7,
                 "top_p": 0.9,
                 "stop": ["</s>", "<|end|>"]
             }
+        
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": stream,
+            "options": options
         }
         
         try:
             response = requests.post(
                 self.generate_url,
                 json=payload,
-                timeout=120,  # Увеличиваем таймаут для больших ответов
+                timeout=timeout,
                 headers={'Content-Type': 'application/json'}
             )
             
@@ -166,7 +179,13 @@ class OllamaService:
         Returns:
             str: Промпт для модели
         """
-        prompt = f"""Ты эксперт по анализу документов. Ты должен отвечать ТОЛЬКО на русском языке. Сравни два документа и найди различия, сходства и изменения.
+        # Настройка промпта для разных моделей
+        if self.model.startswith('deepseek'):
+            system_prompt = "Ты эксперт по анализу документов. Отвечай ТОЛЬКО на русском языке. Анализируй документы внимательно и структурированно."
+        else:
+            system_prompt = "Ты эксперт по анализу документов. Ты должен отвечать ТОЛЬКО на русском языке. Сравни два документа и найди различия, сходства и изменения."
+        
+        prompt = f"""{system_prompt}
 
 ДОКУМЕНТ 1: "{doc1_title}"
 Содержимое:
@@ -214,12 +233,27 @@ class OllamaService:
             Dict с распарсенными данными
         """
         try:
-            # Пытаемся найти JSON в ответе
-            json_start = response_text.find('{')
-            json_end = response_text.rfind('}') + 1
+            # Для DeepSeek моделей ищем JSON после тега </think>
+            if self.model.startswith('deepseek'):
+                # Ищем JSON после тега </think>
+                think_end = response_text.find('</think>')
+                if think_end != -1:
+                    json_text = response_text[think_end + 8:]  # +8 для длины '</think>'
+                    json_start = json_text.find('{')
+                    json_end = json_text.rfind('}') + 1
+                else:
+                    json_start = response_text.find('{')
+                    json_end = response_text.rfind('}') + 1
+                    json_text = response_text
+            else:
+                json_start = response_text.find('{')
+                json_end = response_text.rfind('}') + 1
+                json_text = response_text
             
             if json_start != -1 and json_end > json_start:
-                json_str = response_text[json_start:json_end]
+                json_str = json_text[json_start:json_end]
+                # Очищаем JSON от лишних символов
+                json_str = json_str.strip()
                 parsed_data = json.loads(json_str)
                 
                 return {
@@ -268,7 +302,13 @@ class OllamaService:
         Returns:
             Dict с результатами анализа тональности
         """
-        prompt = f"""Ты должен отвечать ТОЛЬКО на русском языке. Проанализируй тональность и эмоциональную окраску следующего текста:
+        # Настройка промпта для разных моделей
+        if self.model.startswith('deepseek'):
+            system_prompt = "Ты эксперт по анализу эмоций. Отвечай ТОЛЬКО на русском языке. Анализируй тональность текста."
+        else:
+            system_prompt = "Ты должен отвечать ТОЛЬКО на русском языке. Проанализируй тональность и эмоциональную окраску следующего текста:"
+        
+        prompt = f"""{system_prompt}
 
 {content[:2000]}
 
@@ -285,11 +325,26 @@ class OllamaService:
         if result["success"]:
             try:
                 response_text = result["response"]
-                json_start = response_text.find('{')
-                json_end = response_text.rfind('}') + 1
+                
+                # Для DeepSeek моделей ищем JSON после тега </think>
+                if self.model.startswith('deepseek'):
+                    # Ищем JSON после тега </think>
+                    think_end = response_text.find('</think>')
+                    if think_end != -1:
+                        json_text = response_text[think_end + 8:]  # +8 для длины '</think>'
+                        json_start = json_text.find('{')
+                        json_end = json_text.rfind('}') + 1
+                    else:
+                        json_start = response_text.find('{')
+                        json_end = response_text.rfind('}') + 1
+                        json_text = response_text
+                else:
+                    json_start = response_text.find('{')
+                    json_end = response_text.rfind('}') + 1
+                    json_text = response_text
                 
                 if json_start != -1 and json_end > json_start:
-                    json_str = response_text[json_start:json_end]
+                    json_str = json_text[json_start:json_end]
                     # Очищаем JSON от лишних символов
                     json_str = json_str.strip()
                     parsed_data = json.loads(json_str)
@@ -320,7 +375,13 @@ class OllamaService:
         Returns:
             Dict с ключевыми моментами
         """
-        prompt = f"""Ты должен отвечать ТОЛЬКО на русском языке. Извлеки ключевые моменты из следующего документа:
+        # Настройка промпта для разных моделей
+        if self.model.startswith('deepseek'):
+            system_prompt = "Ты эксперт по извлечению информации. Отвечай ТОЛЬКО на русском языке. Извлеки ключевые моменты из документа."
+        else:
+            system_prompt = "Ты должен отвечать ТОЛЬКО на русском языке. Извлеки ключевые моменты из следующего документа:"
+        
+        prompt = f"""{system_prompt}
 
 {content[:3000]}
 
@@ -342,11 +403,26 @@ class OllamaService:
         if result["success"]:
             try:
                 response_text = result["response"]
-                json_start = response_text.find('{')
-                json_end = response_text.rfind('}') + 1
+                
+                # Для DeepSeek моделей ищем JSON после тега </think>
+                if self.model.startswith('deepseek'):
+                    # Ищем JSON после тега </think>
+                    think_end = response_text.find('</think>')
+                    if think_end != -1:
+                        json_text = response_text[think_end + 8:]  # +8 для длины '</think>'
+                        json_start = json_text.find('{')
+                        json_end = json_text.rfind('}') + 1
+                    else:
+                        json_start = response_text.find('{')
+                        json_end = response_text.rfind('}') + 1
+                        json_text = response_text
+                else:
+                    json_start = response_text.find('{')
+                    json_end = response_text.rfind('}') + 1
+                    json_text = response_text
                 
                 if json_start != -1 and json_end > json_start:
-                    json_str = response_text[json_start:json_end]
+                    json_str = json_text[json_start:json_end]
                     # Очищаем JSON от лишних символов
                     json_str = json_str.strip()
                     parsed_data = json.loads(json_str)
