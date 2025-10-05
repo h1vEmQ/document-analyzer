@@ -12,10 +12,10 @@ import json
 
 
 class WARAAdminSite(AdminSite):
-    """Кастомная админ-панель WARA с интеграцией настроек"""
+    """Кастомная админ-панель 📊 Анализатор документов с интеграцией настроек"""
     
-    site_header = 'WARA Админ-панель'
-    site_title = 'WARA'
+    site_header = '📊 Анализатор документов Админ-панель'
+    site_title = '📊 Анализатор документов'
     index_title = 'Управление системой анализа документов'
     
     def get_urls(self):
@@ -120,7 +120,7 @@ class WARAAdminSite(AdminSite):
 
 
 # Создаем экземпляр кастомной админ-панели
-admin_site = WARAAdminSite(name='wara_admin')
+admin_site = WARAAdminSite(name='analyzer_admin')
 
 # Регистрируем все модели в кастомной админ-панели
 from django.contrib.auth.models import User, Group
@@ -133,7 +133,7 @@ admin_site.register(Group)
 admin_site.register(ContentType)
 admin_site.register(Session)
 
-# Регистрируем модели приложений WARA
+# Регистрируем модели приложений Анализатор документов
 from documents.models import Document
 from analysis.models import Comparison, Change, AnalysisSettings
 from reports.models import Report, ReportTemplate, EmailNotification

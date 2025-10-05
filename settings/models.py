@@ -131,12 +131,12 @@ class ServerSettings(models.Model):
     # Основные настройки сервера
     server_name = models.CharField(
         max_length=100,
-        default='Document analyzer Server',
+        default='📊 Анализатор документов Server',
         verbose_name='Название сервера'
     )
     
     server_description = models.TextField(
-        default='Сервер системы анализа документов Document analyzer',
+        default='Сервер системы анализа документов 📊 Анализатор документов',
         verbose_name='Описание сервера'
     )
     
@@ -284,8 +284,8 @@ class ServerSettings(models.Model):
         """Получить настройки сервера (создать если не существует)"""
         settings, created = cls.objects.get_or_create(
             defaults={
-                'server_name': 'Document analyzer Server',
-                'server_description': 'Сервер системы анализа документов Document analyzer',
+                'server_name': '📊 Анализатор документов Server',
+                'server_description': 'Сервер системы анализа документов 📊 Анализатор документов',
             }
         )
         return settings
