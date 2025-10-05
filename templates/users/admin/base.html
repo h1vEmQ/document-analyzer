@@ -4,7 +4,7 @@
 {% block extra_css %}
 {{ block.super }}
 <style>
-    /* Админ-панель стили */
+    /* Администрирование стили */
     .admin-container {
         min-height: 100vh;
         background-color: #f8f9fa;
@@ -337,12 +337,12 @@
                 <div class="col-md-8">
                     <h1>
                         <i class="fas fa-cogs"></i>
-                        {% block admin_title %}Админ-панель{% endblock %}
+                        {% block admin_title %}Администрирование{% endblock %}
                     </h1>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="{% url 'documents:document_list' %}">Главная</a></li>
-                            <li class="breadcrumb-item"><a href="{% url 'users:admin_list' %}">Админ-панель</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'users:admin_list' %}">Администрирование</a></li>
                             {% block breadcrumb %}{% endblock %}
                         </ol>
                     </nav>
@@ -422,7 +422,7 @@
             <p class="mb-0">
                 <i class="fas fa-copyright"></i> 
                 {{ app_name|default:"📊 Анализатор документов" }} - {{ app_description|default:"Система анализа документов" }} | 
-                Админ-панель для пользователя <strong>{{ user.username }}</strong>
+                Администрирование для пользователя <strong>{{ user.username }}</strong>
             </p>
         </div>
     </div>
@@ -432,7 +432,7 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
-    // Админ-панель JavaScript
+    // Администрирование JavaScript
     document.addEventListener('DOMContentLoaded', function() {
         // Подсветка активных ссылок
         const currentPath = window.location.pathname;

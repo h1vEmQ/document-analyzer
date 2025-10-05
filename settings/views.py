@@ -39,7 +39,7 @@ def settings_view(request):
         'form': form,
         'settings': settings,
         'title': 'Настройки приложения',
-        'site_header': 'WARA Админ-панель',
+        'site_header': 'WARA Администрирование',
         'site_title': 'WARA',
         'has_permission': True,
     }
@@ -260,7 +260,7 @@ def server_settings_view(request):
         'settings': settings,
         'system_info': system_info,
         'title': 'Настройки сервера',
-        'site_header': 'WARA Админ-панель',
+        'site_header': 'WARA Администрирование',
         'site_title': 'WARA',
         'has_permission': True,
     }
@@ -311,7 +311,7 @@ def server_health_view(request):
     context = {
         'health_data': health_data,
         'title': 'Состояние сервера',
-        'site_header': 'WARA Админ-панель',
+        'site_header': 'WARA Администрирование',
         'site_title': 'WARA',
         'has_permission': True,
     }
@@ -327,7 +327,7 @@ def server_metrics_view(request):
     context = {
         'metrics_data': metrics_data,
         'title': 'Метрики сервера',
-        'site_header': 'WARA Админ-панель',
+        'site_header': 'WARA Администрирование',
         'site_title': 'WARA',
         'has_permission': True,
     }
