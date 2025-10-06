@@ -80,11 +80,12 @@ class OllamaService:
                 "num_predict": 2048  # Ограничиваем длину ответа
             }
         else:
-            timeout = 120  # 2 минуты
+            timeout = 60  # 1 минута - уменьшили для быстрого ответа
             options = {
-                "temperature": 0.5,  # Более детерминированные ответы
-                "top_p": 0.8,
-                "stop": ["</s>", "<|end|>", "English:", "Analysis:", "Summary:"]
+                "temperature": 0.3,  # Более детерминированные ответы
+                "top_p": 0.7,
+                "stop": ["</s>", "<|end|>", "English:", "Analysis:", "Summary:"],
+                "num_predict": 1024  # Ограничиваем длину ответа для скорости
             }
         
         payload = {
@@ -122,12 +123,21 @@ class OllamaService:
                 }
                 
         except requests.RequestException as e:
-            logger.error(f"Request error: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "status_code": 0
-            }
+            error_msg = str(e)
+            if "timeout" in error_msg.lower():
+                logger.error(f"Ollama request timeout ({timeout}s): {e}")
+                return {
+                    "success": False,
+                    "error": f"Превышено время ожидания ({timeout} секунд). Попробуйте использовать более быструю модель или уменьшить размер документа.",
+                    "status_code": 0
+                }
+            else:
+                logger.error(f"Request error: {e}")
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "status_code": 0
+                }
     
     def compare_documents(self, document1_content: str, document2_content: str, 
                          document1_title: str = "Документ 1", 
@@ -636,11 +646,15 @@ class OllamaService:
         else:
             system_prompt = "КРИТИЧЕСКИ ВАЖНО: Отвечай СТРОГО на русском языке. Никакого английского языка в ответе. Извлеки ключевые моменты из следующего документа:"
         
+        # Ограничиваем размер контента для ускорения обработки
+        max_content_length = 2000 if self.model.startswith('deepseek') else 1500
+        content_preview = content[:max_content_length]
+        
         prompt = f"""{system_prompt}
 
 ВАЖНО: Ты должен отвечать ТОЛЬКО на русском языке. Никакого английского языка в ответе.
 
-{content[:3000]}{green_text_info}
+{content_preview}{green_text_info}
 
 КРИТИЧЕСКИ ВАЖНО: Ты ДОЛЖЕН ответить ТОЛЬКО валидным JSON объектом. Никакого дополнительного текста до или после JSON. ВСЕ ТЕКСТЫ В JSON ДОЛЖНЫ БЫТЬ СТРОГО НА РУССКОМ ЯЗЫКЕ.
 
