@@ -97,9 +97,14 @@
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5>📋 Информация о документе</h5>
+                        <h5>
+                            <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#documentInfo" aria-expanded="false" aria-controls="documentInfo">
+                                📋 Информация о документе <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="collapse" id="documentInfo">
+                        <div class="card-body">
                         <table class="table table-sm">
                             <tr>
                                 <td><strong>Название:</strong></td>
@@ -165,6 +170,7 @@
                                 <td><code>{{ document.checksum|truncatechars:20 }}</code></td>
                             </tr>
                         </table>
+                        </div>
                     </div>
                 </div>
                 
@@ -207,9 +213,14 @@
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5>📊 Содержимое</h5>
+                        <h5>
+                            <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#documentContent" aria-expanded="false" aria-controls="documentContent">
+                                📊 Содержимое <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="collapse" id="documentContent">
+                        <div class="card-body">
                         {% if document.has_content %}
                             <h6>Извлеченный текст:</h6>
                             <div class="border p-3 bg-light" style="max-height: 300px; overflow-y: auto;">
@@ -234,6 +245,7 @@
                         {% else %}
                             <p class="text-muted">Документ еще не обработан</p>
                         {% endif %}
+                        </div>
                     </div>
                 </div>
                 
@@ -686,5 +698,34 @@ function analyzeTables(documentId) {
         document.getElementById('table-analysis-loading').style.display = 'none';
     });
 }
+
+// Обработчики для изменения иконок chevron при открытии/закрытии collapse
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработчик для "Информация о документе"
+    const documentInfoCollapse = document.getElementById('documentInfo');
+    const documentInfoButton = document.querySelector('[data-bs-target="#documentInfo"] i');
+    
+    if (documentInfoCollapse && documentInfoButton) {
+        documentInfoCollapse.addEventListener('show.bs.collapse', function () {
+            documentInfoButton.className = 'fas fa-chevron-up';
+        });
+        documentInfoCollapse.addEventListener('hide.bs.collapse', function () {
+            documentInfoButton.className = 'fas fa-chevron-down';
+        });
+    }
+    
+    // Обработчик для "Содержимое"
+    const documentContentCollapse = document.getElementById('documentContent');
+    const documentContentButton = document.querySelector('[data-bs-target="#documentContent"] i');
+    
+    if (documentContentCollapse && documentContentButton) {
+        documentContentCollapse.addEventListener('show.bs.collapse', function () {
+            documentContentButton.className = 'fas fa-chevron-up';
+        });
+        documentContentCollapse.addEventListener('hide.bs.collapse', function () {
+            documentContentButton.className = 'fas fa-chevron-down';
+        });
+    }
+});
 </script>
 {% endblock %}
