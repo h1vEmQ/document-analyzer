@@ -70,14 +70,16 @@ class OllamaService:
         """
         # Настройки для разных моделей
         if self.model.startswith('deepseek'):
-            # Для DeepSeek увеличиваем таймаут и настраиваем параметры для русского языка
-            timeout = 300  # 5 минут
+            # Для DeepSeek оптимизируем для скорости
+            timeout = 90  # 1.5 минуты - уменьшили для быстрого ответа
             options = {
-                "temperature": 0.2,  # Более детерминированные ответы для соблюдения языка
-                "top_p": 0.7,
+                "temperature": 0.1,  # Очень детерминированные ответы для скорости
+                "top_p": 0.5,
                 "stop": ["<|end|>", "[/INST]", "Human:", "Assistant:", "English:", "Analysis:", "Summary:"],
-                "repeat_penalty": 1.1,  # Снижает повторения
-                "num_predict": 2048  # Ограничиваем длину ответа
+                "repeat_penalty": 1.05,  # Минимальные повторения
+                "num_predict": 512,  # Сильно ограничиваем длину ответа для скорости
+                "num_ctx": 2048,  # Ограничиваем контекст
+                "num_thread": 4  # Используем меньше потоков для стабильности
             }
         else:
             timeout = 60  # 1 минута - уменьшили для быстрого ответа
@@ -491,12 +493,35 @@ class OllamaService:
                 "raw_response": response_text
             }
         elif analysis_type == "key_points":
+            # Пытаемся извлечь ключевые моменты из текста ответа
+            key_points = []
+            lines = response_text.split('\n')
+            
+            for line in lines:
+                line = line.strip()
+                # Ищем строки, которые выглядят как ключевые моменты
+                if (len(line) > 20 and 
+                    not line.startswith('<') and 
+                    not line.startswith('{') and 
+                    not line.startswith('}') and
+                    not line.startswith('"') and
+                    not line.startswith('[') and
+                    not line.startswith(']') and
+                    ':' not in line[:10]):  # Не JSON ключи
+                    key_points.append({
+                        "point": line[:200],  # Ограничиваем длину
+                        "importance": "средний",
+                        "category": "общее"
+                    })
+                    if len(key_points) >= 8:  # Ограничиваем количество
+                        break
+            
             return {
                 "success": True,
                 "key_points_result": {
-                    "key_points": [],
-                    "summary": "Анализ выполнен, но результат не в JSON формате",
-                    "main_topics": [],
+                    "key_points": key_points,
+                    "summary": "Ключевые моменты извлечены из текста ответа",
+                    "main_topics": ["анализ документа"],
                     "raw_analysis": response_text
                 },
                 "raw_response": response_text
@@ -642,12 +667,12 @@ class OllamaService:
         
         # Настройка промпта для разных моделей
         if self.model.startswith('deepseek'):
-            system_prompt = "Ты эксперт по извлечению информации. КРИТИЧЕСКИ ВАЖНО: Отвечай СТРОГО на русском языке. Никакого английского языка в ответе. Извлеки ключевые моменты из документа."
+            system_prompt = "Извлеки ключевые моменты из документа. Отвечай ТОЛЬКО на русском языке."
         else:
             system_prompt = "КРИТИЧЕСКИ ВАЖНО: Отвечай СТРОГО на русском языке. Никакого английского языка в ответе. Извлеки ключевые моменты из следующего документа:"
         
         # Ограничиваем размер контента для ускорения обработки
-        max_content_length = 2000 if self.model.startswith('deepseek') else 1500
+        max_content_length = 1000 if self.model.startswith('deepseek') else 1200
         content_preview = content[:max_content_length]
         
         prompt = f"""{system_prompt}
@@ -692,25 +717,57 @@ class OllamaService:
                         json_start = response_text.find('{')
                         json_end = response_text.rfind('}') + 1
                         json_text = response_text
+                    
+                    if json_start != -1 and json_end > json_start:
+                        json_str = json_text[json_start:json_end]
+                        # Очищаем JSON от лишних символов и исправляем ошибки
+                        json_str = json_str.strip()
+                        
+                        # Исправляем типичные ошибки DeepSeek
+                        json_str = json_str.replace('" Высокий"', '"высокий"')
+                        json_str = json_str.replace('" Средний"', '"средний"')
+                        json_str = json_str.replace('" Низкий"', '"низкий"')
+                        
+                        # Убираем незакрытые строки в конце
+                        if json_str.count('"') % 2 != 0:
+                            # Ищем последнюю незакрытую кавычку и закрываем строку
+                            last_quote = json_str.rfind('"')
+                            if last_quote > 0:
+                                # Проверяем, что после последней кавычки нет закрывающих скобок
+                                after_quote = json_str[last_quote + 1:]
+                                if '}' not in after_quote:
+                                    json_str = json_str[:last_quote + 1] + '"'
+                        
+                        try:
+                            parsed_data = json.loads(json_str)
+                            return {
+                                "success": True,
+                                "key_points_result": parsed_data,
+                                "raw_response": response_text
+                            }
+                        except json.JSONDecodeError as e:
+                            logger.warning(f"DeepSeek JSON parsing failed: {e}")
+                            # Создаем fallback ответ для DeepSeek
+                            return self._create_fallback_response(response_text, "key_points")
                 else:
                     json_start = response_text.find('{')
                     json_end = response_text.rfind('}') + 1
                     json_text = response_text
-                
-                if json_start != -1 and json_end > json_start:
-                    json_str = json_text[json_start:json_end]
-                    # Очищаем JSON от лишних символов
-                    json_str = json_str.strip()
-                    parsed_data = json.loads(json_str)
                     
-                    return {
-                        "success": True,
-                        "key_points_result": parsed_data,
-                        "raw_response": response_text
-                    }
-                else:
-                    # Если JSON не найден, создаем fallback ответ
-                    return self._create_fallback_response(response_text, "key_points")
+                    if json_start != -1 and json_end > json_start:
+                        json_str = json_text[json_start:json_end]
+                        # Очищаем JSON от лишних символов
+                        json_str = json_str.strip()
+                        parsed_data = json.loads(json_str)
+                        
+                        return {
+                            "success": True,
+                            "key_points_result": parsed_data,
+                            "raw_response": response_text
+                        }
+                    else:
+                        # Если JSON не найден, создаем fallback ответ
+                        return self._create_fallback_response(response_text, "key_points")
                     
             except json.JSONDecodeError as e:
                 logger.error(f"Ошибка парсинга JSON: {e}")
@@ -735,8 +792,6 @@ class OllamaService:
                 logger.error(f"Неожиданная ошибка при парсинге ответа: {e}")
                 return self._create_fallback_response(response_text, "key_points")
         
-        return {
-            "success": False,
-            "error": "Не удалось извлечь ключевые моменты",
-            "raw_response": result.get("response", "")
-        }
+        # Если дошли до сюда, значит что-то пошло не так
+        logger.error(f"Неожиданная ошибка в extract_key_points")
+        return self._create_fallback_response(result.get("response", ""), "key_points")
