@@ -55,7 +55,8 @@ class DocumentTableAnalysisAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('document', 'table')
+            'fields': ('document', 'table'),
+            'description': 'Анализ выполняется автоматически при загрузке документа'
         }),
         ('Метрики таблицы', {
             'fields': ('row_count', 'column_count', 'cell_count')

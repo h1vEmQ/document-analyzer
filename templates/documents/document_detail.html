@@ -7,7 +7,11 @@
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>📄 {{ document.title }}</h1>
+            <h1>📄 {{ document.title }}
+                {% if document.get_version_count > 1 %}
+                    <small class="text-muted">(версия {{ document.version }})</small>
+                {% endif %}
+            </h1>
             <div class="btn-group" role="group">
                 <a href="{% url 'documents:version_upload' document.pk %}" class="btn btn-primary">
                     <i class="fas fa-upload"></i> Новая версия
@@ -76,7 +80,7 @@
                     {% with table_analyses=document.table_analyses.all %}
                         {% if table_analyses %}
                             <br><small class="text-info">
-                                <i class="fas fa-table"></i> {{ table_analyses.count }} анализов таблиц выполнено
+                                <i class="fas fa-table"></i> {{ table_analyses.count }} анализов таблиц выполнено автоматически
                             </small>
                         {% endif %}
                     {% endwith %}
@@ -241,17 +245,15 @@
                                 <small class="text-muted">(версия {{ document.version }})</small>
                             {% endif %}
                         </h5>
+                        <small class="text-muted">
+                            <i class="fas fa-magic"></i> Генерируются автоматически при загрузке документа
+                        </small>
                         {% if document.has_content and document.status == 'processed' %}
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-sm btn-outline-primary" 
-                                        onclick="generateKeyPoints({{ document.pk }})"
-                                        {% if document.has_key_points %}disabled{% endif %}>
+                                        onclick="generateKeyPoints({{ document.pk }})">
                                     <i class="fas fa-magic"></i> 
-                                    {% if document.has_key_points %}Сгенерированы{% else %}Сгенерировать{% endif %}
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-info" 
-                                        onclick="testKeyPoints({{ document.pk }})">
-                                    <i class="fas fa-bug"></i> Тест
+                                    {% if document.has_key_points %}Обновить{% else %}Сгенерировать{% endif %}
                                 </button>
                             </div>
                         {% endif %}
@@ -406,6 +408,9 @@
             <div class="card">
                 <div class="card-header">
                     <h5><i class="fas fa-table"></i> Анализ таблиц {% if document.get_version_count > 1 %}<small class="text-muted">(версия {{ document.version }})</small>{% endif %}</h5>
+                    <small class="text-muted">
+                        <i class="fas fa-magic"></i> Анализ выполняется автоматически при загрузке документа
+                    </small>
                 </div>
                 <div class="card-body">
                     {% with table_analyses=document.table_analyses.all %}
@@ -463,6 +468,15 @@
                                     </div>
                                 {% endfor %}
                             </div>
+                            
+                            <!-- Кнопка для повторного анализа -->
+                            <div class="text-center mt-3">
+                                {% if document.status == 'processed' %}
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="analyzeTables({{ document.id }})">
+                                        <i class="fas fa-sync-alt"></i> Обновить анализ таблиц
+                                    </button>
+                                {% endif %}
+                            </div>
                         {% else %}
                             <div class="text-center text-muted">
                                 <p><i class="fas fa-table fa-3x mb-3"></i></p>
@@ -490,6 +504,32 @@
 </div>
 
 <script>
+function showMessage(type, message) {
+    // Создаем элемент уведомления
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Добавляем на страницу
+    document.body.appendChild(alertDiv);
+    
+    // Автоматически скрываем через 5 секунд
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
 function changeVersion(versionId) {
     // Перенаправляем на детальный просмотр выбранной версии
     window.location.href = '/documents/' + versionId + '/';
@@ -559,8 +599,10 @@ function generateKeyPoints(documentId) {
             console.log('Parsed data:', data);
             
             if (data.success) {
-                console.log('Generation successful, reloading page...');
+                console.log('Generation successful, updating content...');
                 stopProgress();
+                
+                // Обновляем контент без перезагрузки страницы
                 setTimeout(() => {
                     window.location.reload();
                 }, 1000); // Небольшая задержка для показа завершения
@@ -596,57 +638,9 @@ function generateKeyPoints(documentId) {
     });
 }
 
-function testKeyPoints(documentId) {
-    // Показываем индикатор загрузки
-    document.getElementById('key-points-loading').style.display = 'block';
-    document.getElementById('key-points-placeholder').style.display = 'none';
-    document.getElementById('key-points-content').style.display = 'none';
-    
-    // Делаем AJAX запрос
-    fetch(`/documents/${documentId}/test-key-points/`, {
-        method: 'GET',
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'Content-Type': 'application/json',
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Скрываем индикатор загрузки
-        document.getElementById('key-points-loading').style.display = 'none';
-        
-        if (data.success) {
-            // Показываем результаты теста
-            let testInfo = `
-                <div class="alert alert-info">
-                    <h6><i class="fas fa-info-circle"></i> Результаты тестирования:</h6>
-                    <p><strong>Статус документа:</strong> ${data.status_info.document_status}</p>
-                    <p><strong>Содержимое:</strong> ${data.status_info.has_content ? 'Есть (' + data.status_info.content_length + ' символов)' : 'Нет'}</p>
-                    <p><strong>Ollama доступен:</strong> ${data.ollama_info.available ? 'Да' : 'Нет'}</p>
-                    <p><strong>Текущая модель:</strong> ${data.ollama_info.current_model}</p>
-                    <p><strong>Доступные модели:</strong> ${data.ollama_info.available_models.join(', ')}</p>
-                    ${data.test_result ? `
-                        <p><strong>Тест генерации:</strong> ${data.test_result.success ? 'Успешно' : 'Ошибка: ' + data.test_result.error}</p>
-                    ` : ''}
-                </div>
-            `;
-            
-            document.getElementById('key-points-placeholder').innerHTML = testInfo;
-            document.getElementById('key-points-placeholder').style.display = 'block';
-        } else {
-            alert('Ошибка при тестировании: ' + (data.error || 'Неизвестная ошибка'));
-            document.getElementById('key-points-placeholder').style.display = 'block';
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Ошибка при тестировании');
-        document.getElementById('key-points-loading').style.display = 'none';
-        document.getElementById('key-points-placeholder').style.display = 'block';
-    });
-}
-
 function analyzeTables(documentId) {
+    console.log('Начинаем анализ таблиц для документа:', documentId);
+    
     document.getElementById('table-analysis-loading').style.display = 'block';
     
     fetch(`/documents/${documentId}/analyze-tables/`, {
@@ -658,12 +652,14 @@ function analyzeTables(documentId) {
         signal: AbortSignal.timeout(30000) // 30 секунд
     })
     .then(response => {
+        console.log('Response status:', response.status);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.json();
     })
     .then(data => {
+        console.log('Analysis result:', data);
         if (data.success) {
             showMessage('success', 'Анализ таблиц успешно выполнен!');
             setTimeout(() => { window.location.reload(); }, 1000);

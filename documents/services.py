@@ -61,22 +61,75 @@ class DocumentParserService:
             document.save(update_fields=['content_text'])
             
             # Автоматически анализируем таблицы, если они есть
-            if content_data.get('tables'):
+            tables_count = len(content_data.get('tables', []))
+            if tables_count > 0:
+                logger.info(f"Начинаем автоматический анализ таблиц для документа {document.title}: найдено {tables_count} таблиц")
                 try:
                     table_analysis_service = DocumentTableAnalysisService()
                     analysis_result = table_analysis_service.analyze_document_tables(document)
                     if analysis_result['success']:
-                        logger.info(f"Автоматический анализ таблиц выполнен для документа {document.title}: {analysis_result.get('tables_count', 0)} таблиц")
+                        analyzed_count = analysis_result.get('tables_count', 0)
+                        logger.info(f"✅ Автоматический анализ таблиц успешно выполнен для документа {document.title}: проанализировано {analyzed_count} из {tables_count} таблиц")
+                        
+                        # Логируем сводку анализа
+                        summary = analysis_result.get('summary', {})
+                        if summary:
+                            logger.info(f"📊 Сводка анализа таблиц: {summary.get('total_cells', 0)} ячеек, заполненность {summary.get('fill_percentage', 0)}%")
                     else:
-                        logger.warning(f"Ошибка автоматического анализа таблиц для документа {document.title}: {analysis_result.get('error', 'Неизвестная ошибка')}")
+                        logger.warning(f"⚠️ Ошибка автоматического анализа таблиц для документа {document.title}: {analysis_result.get('error', 'Неизвестная ошибка')}")
                 except Exception as e:
-                    logger.error(f"Ошибка при автоматическом анализе таблиц документа {document.title}: {str(e)}")
+                    logger.error(f"❌ Критическая ошибка при автоматическом анализе таблиц документа {document.title}: {str(e)}")
+            else:
+                logger.info(f"📄 Документ {document.title} не содержит таблиц - анализ не требуется")
+            
+            # Автоматически генерируем ключевые моменты
+            logger.info(f"Начинаем автоматическую генерацию ключевых моментов для документа {document.title}")
+            try:
+                # Импортируем DocumentKeyPointsService локально для избежания циклических импортов
+                from documents.services import DocumentKeyPointsService
+                key_points_service = DocumentKeyPointsService()
+                key_points_result = key_points_service.generate_key_points(document)
+                
+                if key_points_result['success']:
+                    key_points_count = len(key_points_result.get('key_points', []))
+                    logger.info(f"✅ Автоматическая генерация ключевых моментов успешно выполнена для документа {document.title}: сгенерировано {key_points_count} моментов")
+                    
+                    # Логируем краткую информацию о ключевых моментах
+                    if key_points_result.get('summary'):
+                        logger.info(f"📝 Краткое резюме: {key_points_result['summary'][:100]}...")
+                else:
+                    logger.warning(f"⚠️ Ошибка автоматической генерации ключевых моментов для документа {document.title}: {key_points_result.get('error', 'Неизвестная ошибка')}")
+            except Exception as e:
+                logger.error(f"❌ Критическая ошибка при автоматической генерации ключевых моментов документа {document.title}: {str(e)}")
             
             logger.info(f"Документ {document.title} успешно обработан")
-            return {
+            
+            # Добавляем информацию об анализе таблиц и ключевых моментов в результат
+            result_data = {
                 "success": True,
                 "content_data": content_data
             }
+            
+            if tables_count > 0:
+                result_data["table_analysis"] = {
+                    "performed": True,
+                    "tables_found": tables_count,
+                    "message": f"Автоматически проанализировано {tables_count} таблиц"
+                }
+            else:
+                result_data["table_analysis"] = {
+                    "performed": False,
+                    "tables_found": 0,
+                    "message": "Таблицы не найдены"
+                }
+            
+            # Добавляем информацию о генерации ключевых моментов
+            result_data["key_points_generation"] = {
+                "performed": True,
+                "message": "Автоматически сгенерированы ключевые моменты"
+            }
+            
+            return result_data
             
         except Exception as e:
             logger.error(f"Ошибка при парсинге документа {document.title}: {str(e)}")

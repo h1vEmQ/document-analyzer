@@ -72,18 +72,11 @@ class DocumentDetailView(LoginRequiredMixin, DetailView):
     
     def get(self, request, *args, **kwargs):
         """
-        Если запрашивается не последняя версия документа, перенаправляем на последнюю
+        Показываем запрошенную версию документа
         """
         self.object = self.get_object()
         
-        # Получаем последнюю версию документа
-        latest_version = self.object.get_latest_version()
-        
-        # Если текущий документ не является последней версией, перенаправляем
-        if latest_version and latest_version.id != self.object.id:
-            return redirect('documents:detail', pk=latest_version.id)
-        
-        # Иначе показываем как обычно
+        # Показываем запрошенную версию документа
         context = self.get_context_data(object=self.object)
         return self.render_to_response(context)
 
@@ -726,85 +719,6 @@ class DocumentGenerateKeyPointsView(LoginRequiredMixin, View):
             return JsonResponse({
                 'success': False,
                 'error': 'Внутренняя ошибка сервера'
-            }, status=500)
-
-
-class DocumentTestKeyPointsView(LoginRequiredMixin, View):
-    """
-    Тестовый endpoint для отладки генерации ключевых моментов
-    """
-    
-    def get_queryset(self):
-        return Document.objects.filter(user=self.request.user)
-    
-    def get(self, request, pk):
-        """
-        GET запрос для тестирования генерации ключевых моментов
-        """
-        try:
-            document = get_object_or_404(self.get_queryset(), pk=pk)
-            
-            # Проверяем статус документа
-            status_info = {
-                'document_id': document.id,
-                'document_title': document.title,
-                'document_status': document.status,
-                'has_content': document.has_content(),
-                'content_length': len(document.get_content_text()) if document.has_content() else 0,
-                'has_key_points': document.has_key_points(),
-                'key_points_generated_date': document.key_points_generated_date
-            }
-            
-            # Тестируем Ollama
-            from analysis.ollama_service import OllamaService
-            from settings.models import ApplicationSettings
-            
-            settings = ApplicationSettings.get_settings()
-            model = settings.default_neural_network_model or 'llama3'
-            
-            ollama_service = OllamaService(model=model)
-            ollama_available = ollama_service.is_available()
-            available_models = ollama_service.get_available_models() if ollama_available else []
-            
-            ollama_info = {
-                'available': ollama_available,
-                'current_model': model,
-                'available_models': available_models
-            }
-            
-            # Простой тест генерации
-            test_result = None
-            if ollama_available and document.has_content():
-                try:
-                    test_content = document.get_content_text()[:500]  # Первые 500 символов
-                    test_result = ollama_service.extract_key_points(test_content)
-                    
-                    # Если тест прошел успешно, пробуем полную генерацию
-                    if test_result.get('success'):
-                        key_points_service = DocumentKeyPointsService()
-                        full_result = key_points_service.generate_key_points(document)
-                        test_result['full_generation'] = full_result
-                        
-                except Exception as e:
-                    test_result = {'success': False, 'error': str(e)}
-            
-            return JsonResponse({
-                'success': True,
-                'status_info': status_info,
-                'ollama_info': ollama_info,
-                'test_result': test_result
-            })
-                
-        except Document.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'error': 'Документ не найден'
-            }, status=404)
-        except Exception as e:
-            logger.error(f"Ошибка при тестировании генерации ключевых моментов для документа {pk}: {str(e)}")
-            return JsonResponse({
-                'success': False,
-                'error': f'Внутренняя ошибка сервера: {str(e)}'
             }, status=500)
 
 

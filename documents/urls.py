@@ -16,7 +16,6 @@ urlpatterns = [
     path('bulk-delete/', views.DocumentBulkDeleteView.as_view(), name='bulk_delete'),
     path('versions/bulk-delete/', views.DocumentVersionBulkDeleteView.as_view(), name='version_bulk_delete'),
     path('<int:pk>/generate-key-points/', views.DocumentGenerateKeyPointsView.as_view(), name='generate_key_points'),
-    path('<int:pk>/test-key-points/', views.DocumentTestKeyPointsView.as_view(), name='test_key_points'),
     path('<int:pk>/generate-key-points-test/', views.DocumentGenerateKeyPointsTestView.as_view(), name='generate_key_points_test'),
     path('<int:pk>/analyze-tables/', views.DocumentAnalyzeTablesView.as_view(), name='analyze_tables'),
 ]
