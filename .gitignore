@@ -1,2 +1,9 @@
 .DS_Store
 __pycache__/
+
+# Исключаем загруженные документы и отчеты
+media/documents/
+media/reports/
+
+# Исключаем тестовые HTML файлы
+test_*.html
