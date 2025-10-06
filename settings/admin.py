@@ -106,6 +106,7 @@ class ApplicationSettingsAdmin(admin.ModelAdmin):
     # Настройки отображения в списке
     list_display = [
         'app_name',
+        'default_neural_network_model_display',
         'auto_analysis_status',
         'auto_reports_status',
         'email_notifications_status',
@@ -127,7 +128,7 @@ class ApplicationSettingsAdmin(admin.ModelAdmin):
         }),
         ('Настройки анализа', {
             'fields': ('auto_analysis_enabled', 'analysis_timeout', 'default_neural_network_model'),
-            'classes': ('collapse',)
+            'classes': ('wide',)
         }),
         ('Настройки отчетов', {
             'fields': ('auto_reports_enabled', 'default_report_format'),
@@ -168,6 +169,24 @@ class ApplicationSettingsAdmin(admin.ModelAdmin):
             return format_html('<span style="color: green;">✓ Включены</span>')
         return format_html('<span style="color: red;">✗ Выключены</span>')
     email_notifications_status.short_description = 'Email уведомления'
+    
+    def default_neural_network_model_display(self, obj):
+        """Отображение модели нейросети по умолчанию"""
+        model_display_names = {
+            'llama3': 'Llama 3',
+            'llama3.1': 'Llama 3.1',
+            'llama3:latest': 'Llama 3',
+            'llama3.1:latest': 'Llama 3.1',
+            'mistral': 'Mistral',
+            'mistral:latest': 'Mistral',
+            'codellama': 'Code Llama',
+            'codellama:latest': 'Code Llama',
+            'deepseek-r1:7b': 'DeepSeek R1 7B',
+            'deepseek-r1:8b': 'DeepSeek R1 8B',
+        }
+        display_name = model_display_names.get(obj.default_neural_network_model, obj.default_neural_network_model)
+        return format_html('<span style="color: blue;">🤖 {}</span>', display_name)
+    default_neural_network_model_display.short_description = 'Модель нейросети'
     
     def updated_by_display(self, obj):
         """Отображение пользователя, обновившего настройки"""
