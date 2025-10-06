@@ -473,6 +473,44 @@ class DocumentKeyPointsService:
         self.ollama_service = OllamaService(model=model)
         self.timezone = timezone
     
+    def _get_table_rows_count(self, document):
+        """
+        Получает общее количество строк во всех таблицах документа
+        
+        Args:
+            document: Объект Document
+            
+        Returns:
+            int: Общее количество строк в таблицах
+        """
+        try:
+            # Получаем все таблицы документа
+            tables = document.tables.all()
+            
+            if not tables.exists():
+                return 0
+            
+            # Считаем общее количество строк
+            total_rows = 0
+            for table in tables:
+                # Получаем количество строк из данных таблицы
+                table_data = table.data
+                if table_data and isinstance(table_data, dict):
+                    # Используем row_count из данных таблицы
+                    total_rows += table_data.get('row_count', 0)
+                elif table_data and isinstance(table_data, list):
+                    total_rows += len(table_data)
+                else:
+                    # Если структура неизвестна, оцениваем по размеру
+                    total_rows += 5  # Примерная оценка
+            
+            logger.info(f"Документ {document.id}: найдено {tables.count()} таблиц с общим количеством строк {total_rows}")
+            return total_rows
+            
+        except Exception as e:
+            logger.warning(f"Ошибка при подсчете строк таблиц для документа {document.id}: {str(e)}")
+            return 0
+    
     def generate_key_points(self, document):
         """
         Генерирует ключевые моменты для документа
@@ -493,10 +531,13 @@ class DocumentKeyPointsService:
             if not content or len(content.strip()) < 50:
                 raise ValueError("Недостаточно содержимого для генерации ключевых моментов")
             
-            logger.info(f"Начинаем генерацию ключевых моментов для документа {document.id} с содержимым {len(content)} символов")
+            # Получаем количество строк в таблицах документа
+            table_rows_count = self._get_table_rows_count(document)
             
-            # Генерируем ключевые моменты через Ollama
-            result = self.ollama_service.extract_key_points(content)
+            logger.info(f"Начинаем генерацию ключевых моментов для документа {document.id} с содержимым {len(content)} символов, таблиц: {table_rows_count} строк")
+            
+            # Генерируем ключевые моменты через Ollama с учетом количества строк таблиц
+            result = self.ollama_service.extract_key_points(content, table_rows_count)
             
             logger.info(f"Результат от Ollama для документа {document.id}: {result.get('success', False)}")
             
