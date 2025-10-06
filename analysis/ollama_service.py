@@ -199,7 +199,9 @@ class OllamaService:
 Содержимое:
 {doc2_content[:3000]}  # Ограничиваем размер для промпта
 
-Пожалуйста, проведи детальное сравнение и предоставь результат в следующем JSON формате. ВСЕ ТЕКСТЫ В JSON ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ:
+Пожалуйста, проведи детальное сравнение и предоставь результат в следующем JSON формате. ВСЕ ТЕКСТЫ В JSON ДОЛЖНЫ БЫТЬ НА РУССКОМ ЯЗЫКЕ.
+
+ИНСТРУКЦИЯ: Найди МИНИМУМ 10-15 различий между документами. Чем больше деталей, тем лучше. Не ограничивайся только основными изменениями - найди все различия в тексте, цифрах, датах, именах, структуре.
 
 {{
     "summary": "Краткое резюме основных различий",
@@ -271,11 +273,91 @@ class OllamaService:
             except:
                 pass
             
+            # Попытка извлечь различия из текста напрямую
+            try:
+                differences = self._extract_differences_from_text(response_text)
+                if differences:
+                    return {
+                        "success": True,
+                        "comparison_result": {
+                            "summary": "Извлечены различия из текста",
+                            "differences": differences,
+                            "similarities": [],
+                            "recommendations": [],
+                            "overall_assessment": "Анализ выполнен на основе текстового ответа"
+                        },
+                        "raw_response": response_text
+                    }
+            except:
+                pass
+            
             # В крайнем случае возвращаем fallback
             return self._create_fallback_response(response_text, "comparison")
         except Exception as e:
             logger.error(f"Неожиданная ошибка при парсинге ответа: {e}")
             return self._create_fallback_response(response_text, "comparison")
+    
+    def _extract_differences_from_text(self, response_text: str) -> list:
+        """
+        Извлекает различия из текстового ответа модели
+        
+        Args:
+            response_text: Текстовый ответ от модели
+            
+        Returns:
+            list: Список различий
+        """
+        differences = []
+        
+        # Ищем блоки с различиями
+        if '"differences":' in response_text:
+            # Извлекаем блок differences
+            start = response_text.find('"differences":')
+            if start != -1:
+                # Находим начало массива
+                array_start = response_text.find('[', start)
+                if array_start != -1:
+                    # Считаем скобки для нахождения конца массива
+                    bracket_count = 0
+                    i = array_start
+                    while i < len(response_text):
+                        if response_text[i] == '[':
+                            bracket_count += 1
+                        elif response_text[i] == ']':
+                            bracket_count -= 1
+                            if bracket_count == 0:
+                                # Найден конец массива
+                                array_end = i + 1
+                                array_text = response_text[array_start:array_end]
+                                
+                                # Пытаемся извлечь отдельные различия
+                                import re
+                                # Ищем объекты различий
+                                diff_pattern = r'\{[^{}]*"description"[^{}]*\}'
+                                matches = re.findall(diff_pattern, array_text)
+                                
+                                for match in matches:
+                                    try:
+                                        # Пытаемся исправить JSON
+                                        fixed_match = match.replace('"description":', '"description":')
+                                        diff_obj = json.loads(fixed_match)
+                                        differences.append(diff_obj)
+                                    except:
+                                        # Если не удается распарсить, создаем простой объект
+                                        desc_match = re.search(r'"description":\s*"([^"]*)"', match)
+                                        if desc_match:
+                                            differences.append({
+                                                "type": "content",
+                                                "description": desc_match.group(1),
+                                                "location": "Не указано",
+                                                "old_value": "",
+                                                "new_value": "",
+                                                "significance": "medium"
+                                            })
+                                break
+                        i += 1
+        
+        return differences
     
     def _extract_json_from_response(self, response_text: str) -> str:
         """
