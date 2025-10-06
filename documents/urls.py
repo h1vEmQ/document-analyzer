@@ -18,4 +18,5 @@ urlpatterns = [
     path('<int:pk>/generate-key-points/', views.DocumentGenerateKeyPointsView.as_view(), name='generate_key_points'),
     path('<int:pk>/test-key-points/', views.DocumentTestKeyPointsView.as_view(), name='test_key_points'),
     path('<int:pk>/generate-key-points-test/', views.DocumentGenerateKeyPointsTestView.as_view(), name='generate_key_points_test'),
+    path('<int:pk>/analyze-tables/', views.DocumentAnalyzeTablesView.as_view(), name='analyze_tables'),
 ]

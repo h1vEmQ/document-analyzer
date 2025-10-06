@@ -10,7 +10,7 @@ from docx.table import Table
 from docx.text.paragraph import Paragraph
 from django.core.files.uploadedfile import UploadedFile
 from django.core.exceptions import ValidationError
-from .models import Document, DocumentSection, DocumentTable
+from .models import Document, DocumentSection, DocumentTable, DocumentTableAnalysis
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,18 @@ class DocumentParserService:
             # Сохраняем извлеченный текст в модель
             document.content_text = content_data['text_content']
             document.save(update_fields=['content_text'])
+            
+            # Автоматически анализируем таблицы, если они есть
+            if content_data.get('tables'):
+                try:
+                    table_analysis_service = DocumentTableAnalysisService()
+                    analysis_result = table_analysis_service.analyze_document_tables(document)
+                    if analysis_result['success']:
+                        logger.info(f"Автоматический анализ таблиц выполнен для документа {document.title}: {analysis_result.get('tables_count', 0)} таблиц")
+                    else:
+                        logger.warning(f"Ошибка автоматического анализа таблиц для документа {document.title}: {analysis_result.get('error', 'Неизвестная ошибка')}")
+                except Exception as e:
+                    logger.error(f"Ошибка при автоматическом анализе таблиц документа {document.title}: {str(e)}")
             
             logger.info(f"Документ {document.title} успешно обработан")
             return {
@@ -111,13 +123,29 @@ class DocumentParserService:
     
     def _extract_text(self, doc: DocumentType) -> str:
         """
-        Извлечение всего текстового содержимого
+        Извлечение всего текстового содержимого включая таблицы
         """
         full_text = []
         
+        # Извлекаем текст из параграфов
         for paragraph in doc.paragraphs:
             if paragraph.text.strip():
                 full_text.append(paragraph.text.strip())
+        
+        # Извлекаем текст из таблиц
+        for table in doc.tables:
+            table_text = []
+            for row in table.rows:
+                row_text = []
+                for cell in row.cells:
+                    cell_text = cell.text.strip()
+                    if cell_text:
+                        row_text.append(cell_text)
+                if row_text:
+                    table_text.append(' | '.join(row_text))
+            
+            if table_text:
+                full_text.append('\n'.join(table_text))
         
         return '\n\n'.join(full_text)
     
@@ -453,3 +481,394 @@ class DocumentKeyPointsService:
                 "success": False,
                 "error": str(e)
             }
+
+
+class DocumentTableAnalysisService:
+    """
+    Сервис для анализа таблиц в документах
+    """
+    
+    def __init__(self):
+        import re
+        from django.utils import timezone
+        
+        self.re = re
+        self.timezone = timezone
+        self.logger = logging.getLogger(__name__)
+    
+    def analyze_document_tables(self, document: Document) -> Dict[str, Any]:
+        """
+        Анализирует все таблицы в документе
+        
+        Args:
+            document: Объект Document
+            
+        Returns:
+            Dict с результатами анализа
+        """
+        try:
+            if not document.has_content():
+                raise ValueError("Документ должен быть обработан перед анализом таблиц")
+            
+            # Получаем все таблицы документа
+            tables = DocumentTable.objects.filter(document=document).order_by('order')
+            
+            if not tables.exists():
+                return {
+                    "success": True,
+                    "message": "В документе нет таблиц для анализа",
+                    "tables_count": 0,
+                    "analyses": []
+                }
+            
+            analyses = []
+            total_metrics = {
+                'total_rows': 0,
+                'total_columns': 0,
+                'total_cells': 0,
+                'total_empty_cells': 0,
+                'total_numeric_cells': 0,
+                'total_text_cells': 0
+            }
+            
+            for table in tables:
+                analysis = self._analyze_single_table(table)
+                analyses.append(analysis)
+                
+                # Суммируем метрики
+                total_metrics['total_rows'] += analysis['row_count']
+                total_metrics['total_columns'] += analysis['column_count']
+                total_metrics['total_cells'] += analysis['cell_count']
+                total_metrics['total_empty_cells'] += analysis['empty_cells_count']
+                total_metrics['total_numeric_cells'] += analysis['numeric_cells_count']
+                total_metrics['total_text_cells'] += analysis['text_cells_count']
+            
+            # Сохраняем анализы в базу данных
+            self._save_table_analyses(document, analyses)
+            
+            self.logger.info(f"Анализ таблиц завершен для документа {document.id}: {len(analyses)} таблиц")
+            
+            return {
+                "success": True,
+                "tables_count": len(analyses),
+                "analyses": analyses,
+                "summary": self._generate_summary(total_metrics, len(analyses))
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Ошибка при анализе таблиц документа {document.id}: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def _analyze_single_table(self, table: DocumentTable) -> Dict[str, Any]:
+        """
+        Анализирует одну таблицу
+        
+        Args:
+            table: Объект DocumentTable
+            
+        Returns:
+            Dict с результатами анализа таблицы
+        """
+        try:
+            # Парсим данные таблицы
+            table_data = table.data
+            
+            if not table_data or 'rows' not in table_data:
+                return {
+                    "success": False,
+                    "error": "Некорректные данные таблицы"
+                }
+            
+            rows = table_data['rows']
+            row_count = len(rows)
+            column_count = len(rows[0]) if rows else 0
+            cell_count = row_count * column_count
+            
+            # Анализируем содержимое ячеек
+            empty_cells = 0
+            numeric_cells = 0
+            text_cells = 0
+            has_headers = False
+            header_row_count = 0
+            
+            # Анализируем первую строку на предмет заголовков
+            if rows:
+                first_row = rows[0]
+                header_indicators = 0
+                
+                for cell in first_row:
+                    cell_text = str(cell).strip().lower()
+                    # Проверяем, является ли ячейка заголовком
+                    if (self._is_header_cell(cell_text) or 
+                        cell_text in ['№', 'номер', 'название', 'наименование', 'количество', 'сумма', 'дата']):
+                        header_indicators += 1
+                
+                # Если больше половины ячеек первой строки похожи на заголовки
+                if header_indicators > column_count / 2:
+                    has_headers = True
+                    header_row_count = 1
+            
+            # Анализируем все ячейки
+            for row in rows:
+                for cell in row:
+                    cell_text = str(cell).strip()
+                    
+                    if not cell_text:
+                        empty_cells += 1
+                    elif self._is_numeric(cell_text):
+                        numeric_cells += 1
+                    else:
+                        text_cells += 1
+            
+            # Определяем тип таблицы
+            table_type = self._determine_table_type(rows, numeric_cells, text_cells)
+            
+            # Определяем основную тему
+            main_topic = self._extract_main_topic(rows)
+            
+            # Извлекаем ключевые метрики
+            key_metrics = self._extract_key_metrics(rows, numeric_cells)
+            
+            return {
+                "success": True,
+                "table_id": table.id,
+                "table_title": table.title,
+                "row_count": row_count,
+                "column_count": column_count,
+                "cell_count": cell_count,
+                "empty_cells_count": empty_cells,
+                "numeric_cells_count": numeric_cells,
+                "text_cells_count": text_cells,
+                "has_headers": has_headers,
+                "header_row_count": header_row_count,
+                "table_type": table_type,
+                "main_topic": main_topic,
+                "key_metrics": key_metrics,
+                "fill_percentage": round(((cell_count - empty_cells) / cell_count) * 100, 2) if cell_count > 0 else 0,
+                "numeric_percentage": round((numeric_cells / cell_count) * 100, 2) if cell_count > 0 else 0,
+                "text_percentage": round((text_cells / cell_count) * 100, 2) if cell_count > 0 else 0
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Ошибка при анализе таблицы {table.id}: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def _is_numeric(self, text: str) -> bool:
+        """Проверяет, является ли текст числовым"""
+        try:
+            # Убираем пробелы и заменяем запятые на точки
+            cleaned_text = text.replace(',', '.').replace(' ', '')
+            
+            # Проверяем на число
+            float(cleaned_text)
+            return True
+        except (ValueError, TypeError):
+            # Проверяем на процент
+            if cleaned_text.endswith('%'):
+                try:
+                    float(cleaned_text[:-1])
+                    return True
+                except ValueError:
+                    pass
+            
+            # Проверяем на валюту (рубли, доллары и т.д.)
+            currency_patterns = [
+                r'^\d+[\s,]*\d*[\s,]*\d*\s*(руб|р\.|₽|дол|usd|\$|€|eur)',
+                r'^\d+[\s,]*\d*[\s,]*\d*\s*(тыс|млн|млрд)',
+                r'^\d+[\s,]*\d*[\s,]*\d*\s*(тыс\.|млн\.|млрд\.)'
+            ]
+            
+            for pattern in currency_patterns:
+                if self.re.match(pattern, cleaned_text.lower()):
+                    return True
+            
+            return False
+    
+    def _is_header_cell(self, text: str) -> bool:
+        """Проверяет, является ли ячейка заголовком"""
+        header_keywords = [
+            'название', 'наименование', 'имя', 'заголовок',
+            'номер', '№', 'код', 'id',
+            'дата', 'время', 'период',
+            'количество', 'сумма', 'стоимость', 'цена',
+            'статус', 'состояние', 'результат',
+            'описание', 'комментарий', 'примечание'
+        ]
+        
+        text_lower = text.lower()
+        return any(keyword in text_lower for keyword in header_keywords)
+    
+    def _determine_table_type(self, rows: List[List], numeric_cells: int, text_cells: int) -> str:
+        """Определяет тип таблицы"""
+        if not rows:
+            return "пустая"
+        
+        total_cells = len(rows) * len(rows[0]) if rows else 0
+        
+        if total_cells == 0:
+            return "пустая"
+        
+        numeric_ratio = numeric_cells / total_cells
+        
+        if numeric_ratio > 0.7:
+            return "числовая"
+        elif numeric_ratio > 0.3:
+            return "смешанная"
+        else:
+            return "текстовая"
+    
+    def _extract_main_topic(self, rows: List[List]) -> str:
+        """Извлекает основную тему таблицы"""
+        if not rows or not rows[0]:
+            return "неизвестно"
+        
+        # Берем первую строку как потенциальные заголовки
+        first_row = rows[0]
+        topics = []
+        
+        for cell in first_row:
+            cell_text = str(cell).strip()
+            if cell_text and len(cell_text) > 3:
+                topics.append(cell_text)
+        
+        if topics:
+            # Возвращаем самый длинный заголовок как основную тему
+            return max(topics, key=len)
+        
+        return "неизвестно"
+    
+    def _extract_key_metrics(self, rows: List[List], numeric_cells: int) -> List[Dict[str, Any]]:
+        """Извлекает ключевые метрики из таблицы"""
+        metrics = []
+        
+        if not rows:
+            return metrics
+        
+        # Базовая статистика
+        metrics.append({
+            "name": "Общее количество строк",
+            "value": len(rows),
+            "type": "count"
+        })
+        
+        metrics.append({
+            "name": "Количество столбцов",
+            "value": len(rows[0]) if rows else 0,
+            "type": "count"
+        })
+        
+        metrics.append({
+            "name": "Числовых ячеек",
+            "value": numeric_cells,
+            "type": "count"
+        })
+        
+        # Если есть числовые данные, пытаемся найти суммы и средние
+        if numeric_cells > 0:
+            numeric_values = []
+            for row in rows:
+                for cell in row:
+                    cell_text = str(cell).strip()
+                    if self._is_numeric(cell_text):
+                        try:
+                            cleaned = cell_text.replace(',', '.').replace(' ', '')
+                            # Убираем валютные символы
+                            cleaned = self.re.sub(r'[^\d.,]', '', cleaned)
+                            if cleaned:
+                                numeric_values.append(float(cleaned))
+                        except ValueError:
+                            continue
+            
+            if numeric_values:
+                metrics.append({
+                    "name": "Сумма всех значений",
+                    "value": sum(numeric_values),
+                    "type": "sum"
+                })
+                
+                metrics.append({
+                    "name": "Среднее значение",
+                    "value": sum(numeric_values) / len(numeric_values),
+                    "type": "average"
+                })
+                
+                metrics.append({
+                    "name": "Максимальное значение",
+                    "value": max(numeric_values),
+                    "type": "max"
+                })
+                
+                metrics.append({
+                    "name": "Минимальное значение",
+                    "value": min(numeric_values),
+                    "type": "min"
+                })
+        
+        return metrics
+    
+    def _generate_summary(self, total_metrics: Dict[str, int], tables_count: int) -> Dict[str, Any]:
+        """Генерирует общую сводку по всем таблицам"""
+        if tables_count == 0:
+            return {
+                "message": "В документе нет таблиц",
+                "tables_count": 0
+            }
+        
+        avg_rows = total_metrics['total_rows'] / tables_count if tables_count > 0 else 0
+        avg_columns = total_metrics['total_columns'] / tables_count if tables_count > 0 else 0
+        
+        fill_percentage = 0
+        if total_metrics['total_cells'] > 0:
+            filled_cells = total_metrics['total_cells'] - total_metrics['total_empty_cells']
+            fill_percentage = round((filled_cells / total_metrics['total_cells']) * 100, 2)
+        
+        return {
+            "tables_count": tables_count,
+            "total_rows": total_metrics['total_rows'],
+            "total_columns": total_metrics['total_columns'],
+            "total_cells": total_metrics['total_cells'],
+            "avg_rows_per_table": round(avg_rows, 1),
+            "avg_columns_per_table": round(avg_columns, 1),
+            "fill_percentage": fill_percentage,
+            "numeric_percentage": round((total_metrics['total_numeric_cells'] / total_metrics['total_cells']) * 100, 2) if total_metrics['total_cells'] > 0 else 0,
+            "text_percentage": round((total_metrics['total_text_cells'] / total_metrics['total_cells']) * 100, 2) if total_metrics['total_cells'] > 0 else 0
+        }
+    
+    def _save_table_analyses(self, document: Document, analyses: List[Dict[str, Any]]) -> None:
+        """Сохраняет анализы таблиц в базу данных"""
+        try:
+            # Удаляем старые анализы
+            DocumentTableAnalysis.objects.filter(document=document).delete()
+            
+            # Сохраняем новые анализы
+            for analysis in analyses:
+                if analysis.get('success', False):
+                    table = DocumentTable.objects.get(id=analysis['table_id']) if analysis.get('table_id') else None
+                    
+                    DocumentTableAnalysis.objects.create(
+                        document=document,
+                        table=table,
+                        row_count=analysis['row_count'],
+                        column_count=analysis['column_count'],
+                        cell_count=analysis['cell_count'],
+                        empty_cells_count=analysis['empty_cells_count'],
+                        numeric_cells_count=analysis['numeric_cells_count'],
+                        text_cells_count=analysis['text_cells_count'],
+                        has_headers=analysis['has_headers'],
+                        header_row_count=analysis['header_row_count'],
+                        table_type=analysis['table_type'],
+                        main_topic=analysis['main_topic'],
+                        key_metrics=analysis['key_metrics']
+                    )
+            
+            self.logger.info(f"Анализы таблиц сохранены для документа {document.id}")
+            
+        except Exception as e:
+            self.logger.error(f"Ошибка при сохранении анализов таблиц для документа {document.id}: {str(e)}")
+            raise

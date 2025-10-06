@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Document, DocumentSection, DocumentTable
+from .models import Document, DocumentSection, DocumentTable, DocumentTableAnalysis
 
 
 @admin.register(Document)
@@ -39,12 +39,38 @@ class DocumentSectionAdmin(admin.ModelAdmin):
     ordering = ('document', 'order')
 
 
-@admin.register(DocumentTable)
-class DocumentTableAdmin(admin.ModelAdmin):
+@admin.register(DocumentTableAnalysis)
+class DocumentTableAnalysisAdmin(admin.ModelAdmin):
     """
-    Админ-панель для таблиц документа
+    Админка для анализа таблиц
     """
-    list_display = ('title', 'document', 'order')
-    list_filter = ('document__status',)
-    search_fields = ('title', 'document__title')
-    ordering = ('document', 'order')
+    list_display = [
+        'document', 'table', 'row_count', 'column_count', 
+        'table_type', 'main_topic', 'created_at'
+    ]
+    list_filter = ['table_type', 'has_headers', 'created_at']
+    search_fields = ['document__title', 'main_topic', 'table_type']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['-created_at']
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('document', 'table')
+        }),
+        ('Метрики таблицы', {
+            'fields': ('row_count', 'column_count', 'cell_count')
+        }),
+        ('Анализ содержимого', {
+            'fields': ('empty_cells_count', 'numeric_cells_count', 'text_cells_count')
+        }),
+        ('Структурный анализ', {
+            'fields': ('has_headers', 'header_row_count')
+        }),
+        ('Семантический анализ', {
+            'fields': ('table_type', 'main_topic', 'key_metrics')
+        }),
+        ('Временные метки', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )

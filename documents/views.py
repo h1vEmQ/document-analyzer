@@ -12,7 +12,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from .models import Document
 from .forms import DocumentUploadForm, DocumentVersionUploadForm, DocumentRenameForm
-from .services import DocumentParserService, DocumentValidationService, DocumentKeyPointsService
+from .services import DocumentParserService, DocumentValidationService, DocumentKeyPointsService, DocumentTableAnalysisService
+from .views_table_analysis import DocumentAnalyzeTablesView
 import logging
 import json
 

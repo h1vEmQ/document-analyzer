@@ -408,3 +408,121 @@ class DocumentTable(models.Model):
     
     def __str__(self):
         return f"{self.document.title} - {self.title or 'Таблица'}"
+
+
+class DocumentTableAnalysis(models.Model):
+    """
+    Модель для хранения анализа таблиц документа
+    """
+    document = models.ForeignKey(
+        Document,
+        on_delete=models.CASCADE,
+        related_name='table_analyses',
+        verbose_name='Документ'
+    )
+    
+    table = models.ForeignKey(
+        DocumentTable,
+        on_delete=models.CASCADE,
+        related_name='analyses',
+        verbose_name='Таблица',
+        null=True,
+        blank=True
+    )
+    
+    # Основные метрики таблицы
+    row_count = models.PositiveIntegerField(
+        verbose_name='Количество строк'
+    )
+    
+    column_count = models.PositiveIntegerField(
+        verbose_name='Количество столбцов'
+    )
+    
+    cell_count = models.PositiveIntegerField(
+        verbose_name='Общее количество ячеек'
+    )
+    
+    # Анализ содержимого
+    empty_cells_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Количество пустых ячеек'
+    )
+    
+    numeric_cells_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Количество числовых ячеек'
+    )
+    
+    text_cells_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Количество текстовых ячеек'
+    )
+    
+    # Структурный анализ
+    has_headers = models.BooleanField(
+        default=False,
+        verbose_name='Есть заголовки'
+    )
+    
+    header_row_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Количество строк заголовков'
+    )
+    
+    # Семантический анализ
+    table_type = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Тип таблицы'
+    )
+    
+    main_topic = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='Основная тема'
+    )
+    
+    key_metrics = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Ключевые метрики'
+    )
+    
+    # Временные метки
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата создания'
+    )
+    
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Дата обновления'
+    )
+    
+    class Meta:
+        verbose_name = 'Анализ таблицы'
+        verbose_name_plural = 'Анализы таблиц'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Анализ таблицы {self.table.title if self.table else 'N/A'} в документе {self.document.title}"
+    
+    def get_fill_percentage(self):
+        """Возвращает процент заполненности таблицы"""
+        if self.cell_count == 0:
+            return 0
+        filled_cells = self.cell_count - self.empty_cells_count
+        return round((filled_cells / self.cell_count) * 100, 2)
+    
+    def get_numeric_percentage(self):
+        """Возвращает процент числовых ячеек"""
+        if self.cell_count == 0:
+            return 0
+        return round((self.numeric_cells_count / self.cell_count) * 100, 2)
+    
+    def get_text_percentage(self):
+        """Возвращает процент текстовых ячеек"""
+        if self.cell_count == 0:
+            return 0
+        return round((self.text_cells_count / self.cell_count) * 100, 2)

@@ -503,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            signal: AbortSignal.timeout(90000) // 90 секунд
+                signal: AbortSignal.timeout(120000) // 120 секунд для больших документов
         })
         .then(response => response.json())
         .then(data => {
@@ -520,7 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             if (error.name === 'TimeoutError') {
-                showMessage('error', 'Генерация ключевых моментов превысила время ожидания (90 секунд).');
+                showMessage('error', 'Генерация ключевых моментов превысила время ожидания (120 секунд).');
             } else {
                 showMessage('error', 'Ошибка при генерации ключевых моментов: ' + error.message);
             }
