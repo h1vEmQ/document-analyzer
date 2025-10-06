@@ -1,6 +1,9 @@
 .DS_Store
 __pycache__/
 
+# База данных SQLite
+db.sqlite3
+
 # Исключаем загруженные документы и отчеты
 media/documents/
 media/reports/
