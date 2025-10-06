@@ -10,3 +10,6 @@ media/reports/
 
 # Исключаем тестовые HTML файлы
 test_*.html
+
+# Исключаем настройки VS Code
+.vscode/
