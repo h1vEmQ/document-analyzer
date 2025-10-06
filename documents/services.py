@@ -50,15 +50,17 @@ class DocumentParserService:
             # Извлекаем содержимое
             content_data = {
                 'text_content': self._extract_text(docx_doc),
+                'formatted_content': self._extract_text_with_formatting(docx_doc),
                 'sections': self._extract_sections(docx_doc),
                 'tables': self._extract_tables(docx_doc),
                 'metadata': self._extract_metadata(docx_doc, document),
                 'structure': self._analyze_structure(docx_doc)
             }
             
-            # Сохраняем извлеченный текст в модель
+            # Сохраняем извлеченный текст и форматированное содержимое в модель
             document.content_text = content_data['text_content']
-            document.save(update_fields=['content_text'])
+            document.formatted_content = content_data['formatted_content']
+            document.save(update_fields=['content_text', 'formatted_content'])
             
             # Автоматически анализируем таблицы, если они есть
             tables_count = len(content_data.get('tables', []))
@@ -201,6 +203,92 @@ class DocumentParserService:
                 full_text.append('\n'.join(table_text))
         
         return '\n\n'.join(full_text)
+    
+    def _extract_text_with_formatting(self, doc: DocumentType) -> Dict[str, Any]:
+        """
+        Извлечение текста с информацией о форматировании (особенно зеленый цвет)
+        """
+        content = {
+            'regular_text': [],
+            'green_highlighted_text': [],
+            'other_colored_text': []
+        }
+        
+        # Извлекаем текст из параграфов с форматированием
+        for paragraph in doc.paragraphs:
+            if paragraph.text.strip():
+                paragraph_info = self._analyze_paragraph_formatting(paragraph)
+                content['regular_text'].extend(paragraph_info['regular'])
+                content['green_highlighted_text'].extend(paragraph_info['green'])
+                content['other_colored_text'].extend(paragraph_info['other'])
+        
+        # Извлекаем текст из таблиц с форматированием
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell.text.strip():
+                        cell_info = self._analyze_paragraph_formatting(cell.paragraphs[0] if cell.paragraphs else None)
+                        if cell_info:
+                            content['regular_text'].extend(cell_info['regular'])
+                            content['green_highlighted_text'].extend(cell_info['green'])
+                            content['other_colored_text'].extend(cell_info['other'])
+        
+        return content
+    
+    def _analyze_paragraph_formatting(self, paragraph) -> Dict[str, List[str]]:
+        """
+        Анализ форматирования параграфа для выделения зеленого текста
+        """
+        if not paragraph:
+            return {'regular': [], 'green': [], 'other': []}
+        
+        result = {'regular': [], 'green': [], 'other': []}
+        
+        for run in paragraph.runs:
+            if not run.text.strip():
+                continue
+                
+            text = run.text.strip()
+            
+            # Проверяем цвет текста
+            if run.font.color and run.font.color.rgb:
+                color_rgb = run.font.color.rgb
+                # Зеленый цвет (различные оттенки)
+                if self._is_green_color(color_rgb):
+                    result['green'].append(text)
+                else:
+                    result['other'].append(text)
+            else:
+                result['regular'].append(text)
+        
+        return result
+    
+    def _is_green_color(self, rgb_color) -> bool:
+        """
+        Проверяет, является ли цвет зеленым (различные оттенки)
+        """
+        if not rgb_color:
+            return False
+        
+        # Получаем RGB компоненты
+        r = rgb_color.red
+        g = rgb_color.green  
+        b = rgb_color.blue
+        
+        # Проверяем различные оттенки зеленого
+        # Основной зеленый: зеленый компонент значительно больше красного и синего
+        if g > r and g > b and g > 100:
+            return True
+        
+        # Светло-зеленый: зеленый компонент больше других, но не слишком яркий
+        if g > r + 50 and g > b + 50 and g > 50:
+            return True
+        
+        # Темно-зеленый: зеленый компонент больше других, но общая яркость низкая
+        if g > r and g > b and g > 30 and (r + g + b) < 200:
+            return True
+        
+        return False
     
     def _extract_sections(self, doc: DocumentType) -> List[Dict[str, Any]]:
         """
@@ -511,6 +599,29 @@ class DocumentKeyPointsService:
             logger.warning(f"Ошибка при подсчете строк таблиц для документа {document.id}: {str(e)}")
             return 0
     
+    def _get_green_text_info(self, document):
+        """
+        Получает информацию о тексте, выделенном зеленым цветом
+        
+        Args:
+            document: Объект Document
+            
+        Returns:
+            list: Список фрагментов зеленого текста
+        """
+        try:
+            formatted_content = document.formatted_content
+            if not formatted_content:
+                return []
+            
+            green_text = formatted_content.get('green_highlighted_text', [])
+            logger.info(f"Документ {document.id}: найдено {len(green_text)} фрагментов зеленого текста")
+            return green_text
+            
+        except Exception as e:
+            logger.warning(f"Ошибка при получении зеленого текста для документа {document.id}: {str(e)}")
+            return []
+    
     def generate_key_points(self, document):
         """
         Генерирует ключевые моменты для документа
@@ -534,10 +645,13 @@ class DocumentKeyPointsService:
             # Получаем количество строк в таблицах документа
             table_rows_count = self._get_table_rows_count(document)
             
-            logger.info(f"Начинаем генерацию ключевых моментов для документа {document.id} с содержимым {len(content)} символов, таблиц: {table_rows_count} строк")
+            # Получаем информацию о зеленом тексте
+            green_text_info = self._get_green_text_info(document)
             
-            # Генерируем ключевые моменты через Ollama с учетом количества строк таблиц
-            result = self.ollama_service.extract_key_points(content, table_rows_count)
+            logger.info(f"Начинаем генерацию ключевых моментов для документа {document.id} с содержимым {len(content)} символов, таблиц: {table_rows_count} строк, зеленого текста: {len(green_text_info)} фрагментов")
+            
+            # Генерируем ключевые моменты через Ollama с учетом количества строк таблиц и зеленого текста
+            result = self.ollama_service.extract_key_points(content, table_rows_count, green_text_info)
             
             logger.info(f"Результат от Ollama для документа {document.id}: {result.get('success', False)}")
             

@@ -598,13 +598,14 @@ class OllamaService:
             "raw_response": result.get("response", "")
         }
     
-    def extract_key_points(self, content: str, table_rows_count: int = 0) -> Dict[str, Any]:
+    def extract_key_points(self, content: str, table_rows_count: int = 0, green_text: list = None) -> Dict[str, Any]:
         """
         Извлекает ключевые моменты из документа
         
         Args:
             content: Содержимое документа
             table_rows_count: Количество строк в найденных таблицах документа
+            green_text: Список фрагментов текста, выделенного зеленым цветом
             
         Returns:
             Dict с ключевыми моментами
@@ -621,6 +622,14 @@ class OllamaService:
             max_points = 12
             points_instruction = f"МИНИМУМ {min_points}-{max_points} ключевых моментов"
         
+        # Подготавливаем информацию о зеленом тексте
+        green_text_info = ""
+        if green_text and len(green_text) > 0:
+            green_text_info = f"\n\nВАЖНО: В документе есть текст, выделенный ЗЕЛЕНЫМ ЦВЕТОМ. Этот текст имеет особую важность и ДОЛЖЕН быть включен в ключевые моменты:\n"
+            for i, text in enumerate(green_text[:10], 1):  # Ограничиваем до 10 фрагментов
+                green_text_info += f"{i}. {text}\n"
+            green_text_info += "\nОБЯЗАТЕЛЬНО включи информацию из зеленого текста в ключевые моменты!"
+        
         # Настройка промпта для разных моделей
         if self.model.startswith('deepseek'):
             system_prompt = "Ты эксперт по извлечению информации. КРИТИЧЕСКИ ВАЖНО: Отвечай СТРОГО на русском языке. Никакого английского языка в ответе. Извлеки ключевые моменты из документа."
@@ -631,7 +640,7 @@ class OllamaService:
 
 ВАЖНО: Ты должен отвечать ТОЛЬКО на русском языке. Никакого английского языка в ответе.
 
-{content[:3000]}
+{content[:3000]}{green_text_info}
 
 КРИТИЧЕСКИ ВАЖНО: Ты ДОЛЖЕН ответить ТОЛЬКО валидным JSON объектом. Никакого дополнительного текста до или после JSON. ВСЕ ТЕКСТЫ В JSON ДОЛЖНЫ БЫТЬ СТРОГО НА РУССКОМ ЯЗЫКЕ.
 

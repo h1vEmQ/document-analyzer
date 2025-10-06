@@ -106,6 +106,12 @@ class Document(models.Model):
         verbose_name='Текстовое содержимое'
     )
     
+    formatted_content = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Форматированное содержимое'
+    )
+    
     content_structure = models.JSONField(
         default=dict,
         blank=True,
