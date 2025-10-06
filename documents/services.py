@@ -251,14 +251,18 @@ class DocumentParserService:
             text = run.text.strip()
             
             # Проверяем цвет текста
-            if run.font.color and run.font.color.rgb:
-                color_rgb = run.font.color.rgb
-                # Зеленый цвет (различные оттенки)
-                if self._is_green_color(color_rgb):
-                    result['green'].append(text)
+            try:
+                if run.font.color and hasattr(run.font.color, 'rgb') and run.font.color.rgb:
+                    color_rgb = run.font.color.rgb
+                    # Зеленый цвет (различные оттенки)
+                    if self._is_green_color(color_rgb):
+                        result['green'].append(text)
+                    else:
+                        result['other'].append(text)
                 else:
-                    result['other'].append(text)
-            else:
+                    result['regular'].append(text)
+            except Exception as e:
+                logger.warning(f"Ошибка при анализе цвета текста: {e}")
                 result['regular'].append(text)
         
         return result
@@ -270,25 +274,36 @@ class DocumentParserService:
         if not rgb_color:
             return False
         
-        # Получаем RGB компоненты
-        r = rgb_color.red
-        g = rgb_color.green  
-        b = rgb_color.blue
-        
-        # Проверяем различные оттенки зеленого
-        # Основной зеленый: зеленый компонент значительно больше красного и синего
-        if g > r and g > b and g > 100:
-            return True
-        
-        # Светло-зеленый: зеленый компонент больше других, но не слишком яркий
-        if g > r + 50 and g > b + 50 and g > 50:
-            return True
-        
-        # Темно-зеленый: зеленый компонент больше других, но общая яркость низкая
-        if g > r and g > b and g > 30 and (r + g + b) < 200:
-            return True
-        
-        return False
+        try:
+            # RGBColor в python-docx представляет цвет как строку в формате RRGGBB
+            color_str = str(rgb_color)
+            
+            # Преобразуем строку в RGB компоненты
+            if len(color_str) == 6:  # Формат RRGGBB
+                r = int(color_str[0:2], 16)
+                g = int(color_str[2:4], 16)
+                b = int(color_str[4:6], 16)
+            else:
+                return False
+            
+            # Проверяем различные оттенки зеленого
+            # Основной зеленый: зеленый компонент значительно больше красного и синего
+            if g > r and g > b and g > 100:
+                return True
+            
+            # Светло-зеленый: зеленый компонент больше других, но не слишком яркий
+            if g > r + 50 and g > b + 50 and g > 50:
+                return True
+            
+            # Темно-зеленый: зеленый компонент больше других, но общая яркость низкая
+            if g > r and g > b and g > 30 and (r + g + b) < 200:
+                return True
+            
+            return False
+            
+        except (ValueError, IndexError, TypeError) as e:
+            logger.warning(f"Ошибка при анализе цвета {rgb_color}: {e}")
+            return False
     
     def _extract_sections(self, doc: DocumentType) -> List[Dict[str, Any]]:
         """
